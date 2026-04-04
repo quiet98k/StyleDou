@@ -140,7 +140,12 @@ def act(i, device, free_queue, full_queue, pre_model, model, buffers, flags):
                         env_output['obs_z'] = env_output['obs_z'].unsqueeze(0)
                     if len(env_output['obs_x_no_action'].size()) == 1:
                         env_output['obs_x_no_action'] = env_output['obs_x_no_action'].unsqueeze(0)
-                    logits, prob = pre_model.forward(position, env_output['obs_z'], env_output['obs_x_no_action'], obs['hand_legal'])
+                    logits, prob = pre_model.forward(
+                        position,
+                        env_output['obs_z'].float(),
+                        env_output['obs_x_no_action'].float(),
+                        obs['hand_legal'].float(),
+                    )
                     prob = prob.view(1,-1)
                     predict_hand = prob.expand(obs['x_batch'].shape[0],-1)
                     agent_output = model.forward(position, obs['z_batch'], obs['x_batch'], predict_hand, flags=flags)

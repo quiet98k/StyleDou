@@ -8,11 +8,28 @@ def _format_observation(obs, device):
     z_batch = torch.from_numpy(obs['z_batch']).to(device)
     x_no_action = torch.from_numpy(obs['x_no_action']).to(device)
     z = torch.from_numpy(obs['z']).to(device)
+
+    hand_legal = obs.get('hand_legal', None)
+    if hand_legal is None:
+        hand_legal = torch.ones((15, 5), dtype=torch.float32, device=device)
+    elif isinstance(hand_legal, torch.Tensor):
+        hand_legal = hand_legal.to(device)
+    else:
+        hand_legal = torch.as_tensor(hand_legal, dtype=torch.float32, device=device)
+
+    down_label = obs.get('down_label', None)
+    if down_label is None:
+        down_label = torch.zeros((15,), dtype=torch.int8, device=device)
+    elif isinstance(down_label, torch.Tensor):
+        down_label = down_label.to(device)
+    else:
+        down_label = torch.as_tensor(down_label, dtype=torch.int8, device=device)
+
     obs = {'x_batch': x_batch,
            'z_batch': z_batch,
            'legal_actions': obs['legal_actions'],
-           'down_label': obs['down_label'].to(device),           # Record the information of cards of next player.
-           'hand_legal': obs['hand_legal'].to(device)
+           'down_label': down_label,           # Record the information of cards of next player.
+           'hand_legal': hand_legal
            }
     return position, obs, x_no_action, z
 

@@ -6,17 +6,59 @@ import pprint
 import random
 import logging
 import sys
+import traceback
 from collections import deque
 
 import torch
 from torch import multiprocessing as mp
 from torch import nn
 import torch.nn.functional as F
-from .file_writer import FileWriter
+from douzero.dmc.file_writer import FileWriter
 from .models import Model, Pre_model
 from .utils import get_batch, log, create_env, create_buffers, create_optimizers, act
 
 mean_episode_return_buf = {p:deque(maxlen=100) for p in ['landlord', 'landlord_up', 'landlord_down']}
+
+
+def _resolve_init_path(flags, relative_name):
+    """Resolve initialization files from user-specified or default directories."""
+    init_dir = getattr(flags, 'oppo_init_dir', 'most_recent_model')
+    candidates = []
+    if os.path.isabs(init_dir):
+        candidates.append(os.path.join(init_dir, relative_name))
+    else:
+        candidates.append(os.path.join(os.getcwd(), init_dir, relative_name))
+    # Fallback to baseline checkpoints if most_recent_model is unavailable.
+    candidates.append(os.path.join(os.getcwd(), 'douzero_checkpoints', 'baseline', 'baseline', relative_name))
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def _load_compatible_state_dict(module, checkpoint_path, map_location, model_name):
+    """Load only parameters with matching names and shapes."""
+    ckpt = torch.load(checkpoint_path, map_location=map_location)
+    if isinstance(ckpt, dict) and 'state_dict' in ckpt:
+        ckpt = ckpt['state_dict']
+
+    module_state = module.state_dict()
+    compatible = {
+        key: value for key, value in ckpt.items()
+        if key in module_state and module_state[key].shape == value.shape
+    }
+
+    if compatible:
+        module.load_state_dict(compatible, strict=False)
+        log.logger.info(
+            "Loaded %d compatible tensors for %s from %s",
+            len(compatible), model_name, checkpoint_path,
+        )
+    else:
+        log.logger.warning(
+            "No compatible tensors found for %s from %s; using random init.",
+            model_name, checkpoint_path,
+        )
 
 def compute_loss(logits, targets):
     loss = ((logits.squeeze(-1) - targets)**2).mean()
@@ -74,7 +116,8 @@ def learn(position,    # The prediction models are updated with decision models.
     obs_z = torch.flatten(batch['obs_z'].to(device), 0, 1).float()
     target = torch.flatten(batch['target'].to(device), 0, 1)
     episode_returns = batch['episode_return'][batch['done']]
-    mean_episode_return_buf[position].append(torch.mean(episode_returns).to(device))
+    if episode_returns.numel() > 0:
+        mean_episode_return_buf[position].append(torch.mean(episode_returns).to(device))
     hand_legal = torch.flatten(batch['hand_legal'].to(device), 0, 1)
     down_label = torch.flatten(batch['down_label'].to(device), 0, 1)
     obs_x_no_action = torch.flatten(obs_x_no_action, 0, 1)
@@ -87,8 +130,12 @@ def learn(position,    # The prediction models are updated with decision models.
         learner_outputs = model(obs_z, obs_x, downcard, return_value=True)
         loss = compute_loss(learner_outputs['values'], target)
         loss += pre_loss
+        if len(mean_episode_return_buf[position]) > 0:
+            mean_return = torch.mean(torch.stack([_r for _r in mean_episode_return_buf[position]])).item()
+        else:
+            mean_return = 0.0
         stats = {
-            'mean_episode_return_'+position: torch.mean(torch.stack([_r for _r in mean_episode_return_buf[position]])).item(),
+            'mean_episode_return_'+position: mean_return,
             'loss_'+position: loss.item(),
             'pre_loss_'+position: pre_loss.item()
         }
@@ -171,9 +218,38 @@ def train(flags):
     position_frames = {'landlord':0, 'landlord_up':0, 'landlord_down':0}
     
     for k in ['landlord', 'landlord_up', 'landlord_down']:
+        model_path = _resolve_init_path(flags, k + '0.ckpt')
+        if model_path is None:
+            model_path = _resolve_init_path(flags, k + '_weights_0.ckpt')
+        if model_path is None:
+            model_path = _resolve_init_path(flags, k + '.ckpt')
+
+        pre_model_path = _resolve_init_path(flags, 'pre_' + k + '0.ckpt')
+        if pre_model_path is None:
+            pre_model_path = _resolve_init_path(flags, 'pre_' + k + '_weights_0.ckpt')
+        if pre_model_path is None:
+            pre_model_path = _resolve_init_path(flags, 'pre_' + k + '.ckpt')
+
         for device in range(flags.num_actor_devices):
-            models[device].get_model(k).load_state_dict(torch.load('/root/doudizhu/DouZero/most_recent_model/' + k + '0.ckpt'))
-            pre_models[device].get_model(k).load_state_dict(torch.load('/root/doudizhu/DouZero/most_recent_model/pre_' + k + '0.ckpt'))
+            if model_path is not None:
+                _load_compatible_state_dict(
+                    models[device].get_model(k),
+                    model_path,
+                    map_location='cuda:' + str(device),
+                    model_name='decision_' + k,
+                )
+            else:
+                log.logger.warning('No init decision weights found for %s; using random init.', k)
+
+            if pre_model_path is not None:
+                _load_compatible_state_dict(
+                    pre_models[device].get_model(k),
+                    pre_model_path,
+                    map_location='cuda:' + str(device),
+                    model_name='prediction_' + k,
+                )
+            else:
+                log.logger.warning('No init prediction weights found for %s; using random init.', k)
 
     # Load models if any
     if flags.load_model and os.path.exists(checkpointpath):
@@ -281,13 +357,15 @@ def train(flags):
 
             if timer() - last_checkpoint_time > flags.save_interval * 60:  # When saving new models, start a round of test
                 checkpoint(frames)
-                test_time = timer() - initial_time
                 last_checkpoint_time = timer()
-                os.system("python3 generate_eval_data.py --num_games 10000")
-                time.sleep(10)
-                os.system("python3 /root/doudizhu/DouZero/ADP_test.py --time " + str(test_time) + " --frames " + str(frames) + " &")
-                time.sleep(10)
-                os.system("python3 /root/doudizhu/DouZero/sl_test.py --time " + str(test_time) + " --frames " + str(frames) + " &")
+                if getattr(flags, 'run_eval_on_checkpoint', False):
+                    test_time = timer() - initial_time
+                    os.system("python3 generate_eval_data.py --num_games 10000")
+                    time.sleep(10)
+                    test_dir = os.path.join(os.getcwd(), 'oppo_modeling', 'test')
+                    os.system("cd " + test_dir + " && python3 ADP_test.py --time " + str(test_time) + " --frames " + str(frames) + " &")
+                    time.sleep(10)
+                    os.system("cd " + test_dir + " && python3 sl_test.py --time " + str(test_time) + " --frames " + str(frames) + " &")
 
             end_time = timer()
             fps = (frames - start_frames) / (end_time - start_time)
@@ -304,11 +382,22 @@ def train(flags):
                          pprint.pformat(stats))
 
     except KeyboardInterrupt:
+        for actor in actor_processes:
+            if actor.is_alive():
+                actor.terminate()
+        for actor in actor_processes:
+            actor.join(timeout=2)
         return 
     else:
         for thread in threads:
             thread.join()
-        log.info('Learning finished after %d frames.', frames)
+        log.logger.info('Learning finished after %d frames.', frames)
+
+    for actor in actor_processes:
+        if actor.is_alive():
+            actor.terminate()
+    for actor in actor_processes:
+        actor.join(timeout=2)
 
     checkpoint(frames)
     plogger.close()
