@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import pickle
 
-from douzero.env.game import GameEnv
+from oppo_modeling.env.game import GameEnv
 
 num_landlord_wins = mp.Value('i', 0)
 num_farmer_wins = mp.Value('i', 0)
@@ -84,7 +84,23 @@ def evaluate(landlord, landlord_up, landlord_down, eval_data, num_workers):
 
     results = [p.get() for p in results]
     num_total_wins = num_landlord_wins.value + num_farmer_wins.value
+    if num_total_wins == 0:
+        wp_landlord = 0.0
+        wp_farmer = 0.0
+        adp_landlord = 0.0
+        adp_farmer = 0.0
+    else:
+        wp_landlord = num_landlord_wins.value / num_total_wins
+        wp_farmer = num_farmer_wins.value / num_total_wins
+        adp_landlord = num_landlord_scores.value / num_total_wins
+        adp_farmer = 2 * num_farmer_scores.value / num_total_wins
     print('WP results:')
-    print('landlord : Farmers - {} : {}'.format(num_landlord_wins.value / num_total_wins, num_farmer_wins.value / num_total_wins))
+    print('landlord : Farmers - {} : {}'.format(wp_landlord, wp_farmer))
     print('ADP results:')
-    print('landlord : Farmers - {} : {}'.format(num_landlord_scores.value / num_total_wins, 2 * num_farmer_scores.value / num_total_wins)) 
+    print('landlord : Farmers - {} : {}'.format(adp_landlord, adp_farmer))
+    return {
+        'wp_landlord': wp_landlord,
+        'wp_farmer': wp_farmer,
+        'adp_landlord': adp_landlord,
+        'adp_farmer': adp_farmer,
+    }

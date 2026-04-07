@@ -1,9 +1,19 @@
 import numpy as np
-import torch 
+import torch
+
+
+def _resolve_device(device):
+    if isinstance(device, str):
+        if device == "cpu":
+            return torch.device("cpu")
+        return torch.device(device)
+    if device is None:
+        return torch.device("cpu")
+    return torch.device('cuda:' + str(device))
 
 def _format_observation(obs, device):
     position = obs['position']
-    device = torch.device('cuda:'+str(device))
+    device = _resolve_device(device)
     x_batch = torch.from_numpy(obs['x_batch']).to(device)
     z_batch = torch.from_numpy(obs['z_batch']).to(device)
     x_no_action = torch.from_numpy(obs['x_no_action']).to(device)

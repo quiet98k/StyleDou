@@ -12,7 +12,7 @@ import torch
 from torch import multiprocessing as mp
 import torch.nn.functional as F
 from .env_utils import Environment
-from douzero.env import Env
+from oppo_modeling.env.env import Env
 
 Card2Column = {3: 0, 4: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7,
                11: 8, 12: 9, 13: 10, 14: 11, 17: 12}
@@ -82,7 +82,9 @@ def create_buffers(flags):
     T = flags.unroll_length
     positions = ['landlord', 'landlord_up', 'landlord_down']
     buffers = []
-    for device in range(torch.cuda.device_count()):
+    use_cpu = getattr(flags, 'actor_device_cpu', False)
+    for device in range(flags.num_actor_devices):
+        device_obj = torch.device('cpu') if use_cpu else torch.device('cuda:'+str(device))
         buffers.append({})
         for position in positions:
             x_dim = 319 if position == 'landlord' else 430
@@ -100,7 +102,9 @@ def create_buffers(flags):
             _buffers: Buffers = {key: [] for key in specs}
             for _ in range(flags.num_buffers):
                 for key in _buffers:
-                    _buffer = torch.empty(**specs[key]).to(torch.device('cuda:'+str(device))).share_memory_()
+                    _buffer = torch.empty(**specs[key]).to(device_obj)
+                    if device_obj.type == 'cpu':
+                        _buffer.share_memory_()
                     _buffers[key].append(_buffer)
             buffers[device][position] = _buffers
     return buffers
@@ -110,7 +114,7 @@ def act(i, device, free_queue, full_queue, pre_model, model, buffers, flags):
     positions = ['landlord', 'landlord_up', 'landlord_down']
     try:
         T = flags.unroll_length
-        log.logger.info('Device %i Actor %i started.', device, i)
+        log.logger.info('Device %s Actor %i started.', device, i)
 
         env = create_env(flags)
         

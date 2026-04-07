@@ -4,6 +4,16 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+
+def _resolve_device(device):
+    if isinstance(device, str):
+        if device == "cpu":
+            return torch.device("cpu")
+        return torch.device(device)
+    if device is None:
+        return torch.device("cpu")
+    return torch.device('cuda:' + str(device))
+
 class LandlordLstmModel(nn.Module):        # Decision that incorporate the prediction.
     def __init__(self):
         super().__init__()
@@ -285,10 +295,11 @@ pre_model_dict['landlord_down'] = FarmerpredictModel
 
 class Model:
     def __init__(self, device=0):
+        device = _resolve_device(device)
         self.models = {}
-        self.models['landlord'] = LandlordLstmModel().to(torch.device('cuda:'+str(device)))
-        self.models['landlord_up'] = FarmerLstmModel().to(torch.device('cuda:'+str(device)))
-        self.models['landlord_down'] = FarmerLstmModel().to(torch.device('cuda:'+str(device)))
+        self.models['landlord'] = LandlordLstmModel().to(device)
+        self.models['landlord_up'] = FarmerLstmModel().to(device)
+        self.models['landlord_down'] = FarmerLstmModel().to(device)
 
     def forward(self, position, z, x, pred, training=False, flags=None):
         model = self.models[position]
@@ -316,10 +327,11 @@ class Model:
 
 class Pre_model:
     def __init__(self, device=0):
+        device = _resolve_device(device)
         self.models = {}
-        self.models['landlord'] = LandlordpredictModel().to(torch.device('cuda:'+str(device)))
-        self.models['landlord_up'] = FarmerpredictModel().to(torch.device('cuda:'+str(device)))
-        self.models['landlord_down'] = FarmerpredictModel().to(torch.device('cuda:'+str(device)))
+        self.models['landlord'] = LandlordpredictModel().to(device)
+        self.models['landlord_up'] = FarmerpredictModel().to(device)
+        self.models['landlord_down'] = FarmerpredictModel().to(device)
 
     def forward(self, position, z, x, legal):
         model = self.models[position]
@@ -346,10 +358,11 @@ class Pre_model:
         
 class Base_Model:
     def __init__(self, device=0):
+        device = _resolve_device(device)
         self.models = {}
-        self.models['landlord'] = Base_LandlordLstmModel().to(torch.device('cuda:'+str(device)))
-        self.models['landlord_up'] = Base_FarmerLstmModel().to(torch.device('cuda:'+str(device)))
-        self.models['landlord_down'] = Base_FarmerLstmModel().to(torch.device('cuda:'+str(device)))
+        self.models['landlord'] = Base_LandlordLstmModel().to(device)
+        self.models['landlord_up'] = Base_FarmerLstmModel().to(device)
+        self.models['landlord_down'] = Base_FarmerLstmModel().to(device)
 
     def forward(self, position, z, x, return_value=False, flags=None):
         model = self.models[position]

@@ -144,6 +144,18 @@ ENV/
 env.bak/
 venv.bak/
 
+# Track opponent-model env package
+!oppo_modeling/env/
+!oppo_modeling/env/**
+oppo_modeling/env/__pycache__/
+oppo_modeling/env/**/*.pyc
+
+# Track douzero env package
+!douzero/env/
+!douzero/env/**
+douzero/env/__pycache__/
+douzero/env/**/*.pyc
+
 # Spyder project settings
 .spyderproject
 .spyproject

@@ -13,7 +13,7 @@ import torch
 from torch import multiprocessing as mp
 from torch import nn
 import torch.nn.functional as F
-from douzero.dmc.file_writer import FileWriter
+from .file_writer import FileWriter
 from .models import Model, Pre_model
 from .utils import get_batch, log, create_env, create_buffers, create_optimizers, act
 
@@ -170,10 +170,14 @@ def train(flags):
     # Initialize actor models
     models = []
     pre_models = []
-    assert flags.num_actor_devices <= len(flags.gpu_devices.split(',')), 'The number of actor devices can not exceed the number of available devices'
+    if not getattr(flags, 'actor_device_cpu', False):
+        assert flags.num_actor_devices <= len(flags.gpu_devices.split(',')), (
+            'The number of actor devices can not exceed the number of available devices'
+        )
     for device in range(flags.num_actor_devices):
-        model = Model(device=device)
-        pre_model = Pre_model(device=device)
+        actor_device = 'cpu' if getattr(flags, 'actor_device_cpu', False) else device
+        model = Model(device=actor_device)
+        pre_model = Pre_model(device=actor_device)
         model.share_memory()
         pre_model.share_memory()
         model.eval()
@@ -231,11 +235,12 @@ def train(flags):
             pre_model_path = _resolve_init_path(flags, 'pre_' + k + '.ckpt')
 
         for device in range(flags.num_actor_devices):
+            map_location = 'cpu' if getattr(flags, 'actor_device_cpu', False) else 'cuda:' + str(device)
             if model_path is not None:
                 _load_compatible_state_dict(
                     models[device].get_model(k),
                     model_path,
-                    map_location='cuda:' + str(device),
+                    map_location=map_location,
                     model_name='decision_' + k,
                 )
             else:
@@ -245,7 +250,7 @@ def train(flags):
                 _load_compatible_state_dict(
                     pre_models[device].get_model(k),
                     pre_model_path,
-                    map_location='cuda:' + str(device),
+                    map_location=map_location,
                     model_name='prediction_' + k,
                 )
             else:
@@ -273,9 +278,10 @@ def train(flags):
     for device in range(flags.num_actor_devices):
         num_actors = flags.num_actors
         for i in range(flags.num_actors):
+            actor_device = 'cpu' if getattr(flags, 'actor_device_cpu', False) else device
             actor = ctx.Process(
                 target=act,
-                args=(i, device, free_queue[device], full_queue[device], pre_models[device], models[device], buffers[device], flags))
+                args=(i, actor_device, free_queue[device], full_queue[device], pre_models[device], models[device], buffers[device], flags))
             actor.start()
             actor_processes.append(actor)
 
@@ -360,12 +366,36 @@ def train(flags):
                 last_checkpoint_time = timer()
                 if getattr(flags, 'run_eval_on_checkpoint', False):
                     test_time = timer() - initial_time
-                    os.system("python3 generate_eval_data.py --num_games 10000")
+                    num_games = getattr(flags, 'eval_num_games', 10000)
+                    python_exec = sys.executable
+                    os.system(f"{python_exec} generate_eval_data.py --num_games {num_games}")
                     time.sleep(10)
+                    checkpoint_dir = os.path.join(os.getcwd(), flags.savedir, flags.xpid)
+                    landlord_ckpt = os.path.join(checkpoint_dir, f"landlord_weights_{frames}.ckpt")
+                    landlord_up_ckpt = os.path.join(checkpoint_dir, f"landlord_up_weights_{frames}.ckpt")
+                    landlord_down_ckpt = os.path.join(checkpoint_dir, f"landlord_down_weights_{frames}.ckpt")
                     test_dir = os.path.join(os.getcwd(), 'oppo_modeling', 'test')
-                    os.system("cd " + test_dir + " && python3 ADP_test.py --time " + str(test_time) + " --frames " + str(frames) + " &")
+                    os.system(
+                        "cd " + test_dir + " && " + python_exec + " ADP_test.py"
+                        + " --time " + str(test_time)
+                        + " --frames " + str(frames)
+                        + " --checkpoint_dir " + checkpoint_dir
+                        + " --landlord_ckpt " + landlord_ckpt
+                        + " --landlord_up_ckpt " + landlord_up_ckpt
+                        + " --landlord_down_ckpt " + landlord_down_ckpt
+                        + " &"
+                    )
                     time.sleep(10)
-                    os.system("cd " + test_dir + " && python3 sl_test.py --time " + str(test_time) + " --frames " + str(frames) + " &")
+                    os.system(
+                        "cd " + test_dir + " && " + python_exec + " sl_test.py"
+                        + " --time " + str(test_time)
+                        + " --frames " + str(frames)
+                        + " --checkpoint_dir " + checkpoint_dir
+                        + " --landlord_ckpt " + landlord_ckpt
+                        + " --landlord_up_ckpt " + landlord_up_ckpt
+                        + " --landlord_down_ckpt " + landlord_down_ckpt
+                        + " &"
+                    )
 
             end_time = timer()
             fps = (frames - start_frames) / (end_time - start_time)

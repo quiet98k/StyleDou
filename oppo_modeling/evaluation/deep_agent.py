@@ -1,13 +1,14 @@
+import os
 import torch
 import numpy as np
 
-from douzero.env.env import test_get_obs
+from oppo_modeling.env.env import test_get_obs
 
 def _load_model(position, model_path):               # Load prediction models and decision models
-    from douzero.dmc.models import model_dict, pre_model_dict
-    middle_path = model_path.split('/')
-    middle_path[1] = '/pre_' + middle_path[1]
-    pre_model_path = "".join(middle_path)
+    from oppo_modeling.dmc.models import model_dict, pre_model_dict
+    model_dir = os.path.dirname(model_path)
+    model_name = os.path.basename(model_path)
+    pre_model_path = os.path.join(model_dir, 'pre_' + model_name)
     model = model_dict[position]()
     model_state_dict = model.state_dict()
     pred_model = pre_model_dict[position]()
