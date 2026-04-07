@@ -396,6 +396,39 @@ def train(flags):
                         + " --landlord_down_ckpt " + landlord_down_ckpt
                         + " &"
                     )
+                    time.sleep(10)
+                    os.system(
+                        "cd " + test_dir + " && " + python_exec + " WP_test.py"
+                        + " --time " + str(test_time)
+                        + " --frames " + str(frames)
+                        + " --checkpoint_dir " + checkpoint_dir
+                        + " --landlord_ckpt " + landlord_ckpt
+                        + " --landlord_up_ckpt " + landlord_up_ckpt
+                        + " --landlord_down_ckpt " + landlord_down_ckpt
+                        + " &"
+                    )
+                    time.sleep(10)
+                    os.system(
+                        "cd " + test_dir + " && " + python_exec + " random_test.py"
+                        + " --time " + str(test_time)
+                        + " --frames " + str(frames)
+                        + " --checkpoint_dir " + checkpoint_dir
+                        + " --landlord_ckpt " + landlord_ckpt
+                        + " --landlord_up_ckpt " + landlord_up_ckpt
+                        + " --landlord_down_ckpt " + landlord_down_ckpt
+                        + " &"
+                    )
+                    time.sleep(10)
+                    os.system(
+                        "cd " + test_dir + " && " + python_exec + " rlcard_test.py"
+                        + " --time " + str(test_time)
+                        + " --frames " + str(frames)
+                        + " --checkpoint_dir " + checkpoint_dir
+                        + " --landlord_ckpt " + landlord_ckpt
+                        + " --landlord_up_ckpt " + landlord_up_ckpt
+                        + " --landlord_down_ckpt " + landlord_down_ckpt
+                        + " &"
+                    )
 
             end_time = timer()
             fps = (frames - start_frames) / (end_time - start_time)
