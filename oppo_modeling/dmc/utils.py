@@ -1,7 +1,6 @@
 import os 
 import typing
 import logging
-from logging import handlers
 import sys
 import traceback
 import numpy as np
@@ -38,10 +37,7 @@ class Logger(object):
         self.logger.setLevel(self.level_relations.get(level))
         sh = logging.StreamHandler()
         sh.setFormatter(format_str) 
-        th = handlers.TimedRotatingFileHandler(filename=filename,when=when,backupCount=backCount,encoding='utf-8')
-        th.setFormatter(format_str)
-        self.logger.addHandler(sh) 
-        self.logger.addHandler(th)
+        self.logger.addHandler(sh)
 
 log = Logger('all.log',level='info')
 Buffers = typing.Dict[str, typing.List[torch.Tensor]]
