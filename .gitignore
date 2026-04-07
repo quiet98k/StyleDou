@@ -156,6 +156,11 @@ oppo_modeling/env/**/*.pyc
 douzero/env/__pycache__/
 douzero/env/**/*.pyc
 
+!style_modeling/env/
+!style_modeling/env/**
+style_modeling/env/__pycache__/
+style_modeling/env/**/*.pyc
+
 # Spyder project settings
 .spyderproject
 .spyproject
