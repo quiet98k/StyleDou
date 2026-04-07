@@ -210,8 +210,10 @@ baselines/*
 !baselines/
 
 logs/
-*.log
+*.log*
 
 *.pkl
 
 *checkpoints/
+
+*.ckpt
