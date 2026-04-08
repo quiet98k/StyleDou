@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=douzero_train_style
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:a5000:2
+#SBATCH --gres=gpu:v100:3
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --time=7-00:00:00
@@ -39,7 +39,7 @@ OBJECTIVE=${OBJECTIVE:-adp}
 TOTAL_FRAMES=${TOTAL_FRAMES:-1000000000}
 XPID=${XPID:-style_model}
 SAVEDIR=${SAVEDIR:-douzero_checkpoints/style}
-SAVE_INTERVAL=${SAVE_INTERVAL:-240}
+SAVE_INTERVAL=${SAVE_INTERVAL:-120}
 BATCH_SIZE=${BATCH_SIZE:-32}
 UNROLL_LENGTH=${UNROLL_LENGTH:-100}
 NUM_BUFFERS=${NUM_BUFFERS:-50}
@@ -67,8 +67,8 @@ if [[ "$GPU_COUNT" -lt 1 ]]; then
   echo "Expected at least 1 GPU on this node, but only saw ${GPU_COUNT}."
   exit 1
 fi
-if ! nvidia-smi -L | grep -q "A5000"; then
-  echo "Expected A5000 GPUs, but did not detect A5000 in nvidia-smi."
+if ! nvidia-smi -L | grep -Eiq "V100|v100"; then
+  echo "Expected V100 GPUs, but did not detect V100 in nvidia-smi."
   exit 1
 fi
 
@@ -84,7 +84,7 @@ if [[ -z "$NUM_ACTOR_DEVICES" ]]; then
   NUM_ACTOR_DEVICES="$GPU_COUNT"
 fi
 if [[ -z "$NUM_ACTORS" ]]; then
-  NUM_ACTORS=$((5 * GPU_COUNT))
+  NUM_ACTORS=5
 fi
 
 echo -e "\n========================================"

@@ -6,15 +6,24 @@ from style_modeling.env.env import test_get_obs
 
 
 def _load_model(position, model_path):
-    from style_modeling.dmc.models import model_dict
-    model = model_dict[position]()
-    model_state_dict = model.state_dict()
+    from style_modeling.dmc.models import build_style_model
     if torch.cuda.is_available():
         pretrained = torch.load(model_path, map_location='cuda:0')
     else:
         pretrained = torch.load(model_path, map_location='cpu')
-    pretrained = {k: v for k, v in pretrained.items() if k in model_state_dict}
-    model_state_dict.update(pretrained)
+    if isinstance(pretrained, dict) and 'state_dict' in pretrained and isinstance(pretrained['state_dict'], dict):
+        pretrained = pretrained['state_dict']
+    elif isinstance(pretrained, dict) and 'model_state_dict' in pretrained and isinstance(pretrained['model_state_dict'], dict):
+        pretrained = pretrained['model_state_dict']
+
+    model = build_style_model(position, pretrained if isinstance(pretrained, dict) else None)
+    model_state_dict = model.state_dict()
+    if isinstance(pretrained, dict):
+        pretrained = {
+            k: v for k, v in pretrained.items()
+            if k in model_state_dict and model_state_dict[k].shape == v.shape
+        }
+        model_state_dict.update(pretrained)
     model.load_state_dict(model_state_dict)
     if torch.cuda.is_available():
         model.cuda()

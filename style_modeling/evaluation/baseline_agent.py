@@ -22,7 +22,14 @@ def _load_model(position, model_type):
             pretrained = torch.load(model_path, map_location='cuda:0')
         else:
             pretrained = torch.load(model_path, map_location='cpu')
-        pretrained = {k: v for k, v in pretrained.items() if k in model_state_dict}
+        if isinstance(pretrained, dict) and 'state_dict' in pretrained and isinstance(pretrained['state_dict'], dict):
+            pretrained = pretrained['state_dict']
+        elif isinstance(pretrained, dict) and 'model_state_dict' in pretrained and isinstance(pretrained['model_state_dict'], dict):
+            pretrained = pretrained['model_state_dict']
+        pretrained = {
+            k: v for k, v in pretrained.items()
+            if k in model_state_dict and model_state_dict[k].shape == v.shape
+        }
         model_state_dict.update(pretrained)
         model.load_state_dict(model_state_dict)
     else:

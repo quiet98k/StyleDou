@@ -99,13 +99,13 @@ class StyleQModel(nn.Module):
 
 
 class LandlordStyleModel(StyleQModel):
-    def __init__(self, style_dim=64, history_dim=128):
-        super().__init__(x_dim=373, style_dim=style_dim, history_dim=history_dim)
+    def __init__(self, x_dim=373, style_dim=64, history_dim=128):
+        super().__init__(x_dim=x_dim, style_dim=style_dim, history_dim=history_dim)
 
 
 class FarmerStyleModel(StyleQModel):
-    def __init__(self, style_dim=64, history_dim=128):
-        super().__init__(x_dim=484, style_dim=style_dim, history_dim=history_dim)
+    def __init__(self, x_dim=484, style_dim=64, history_dim=128):
+        super().__init__(x_dim=x_dim, style_dim=style_dim, history_dim=history_dim)
 
 
 class LandlordStylePredictModel(StylePredictModel):
@@ -189,6 +189,32 @@ model_dict = {
     'landlord_up': FarmerStyleModel,
     'landlord_down': FarmerStyleModel,
 }
+
+
+def infer_style_model_dims(state_dict, position):
+    style_weight = state_dict.get('style_model.style_encoder.lstm.weight_ih_l0')
+    history_weight = state_dict.get('decision_model.history_lstm.weight_ih_l0')
+    dense_weight = state_dict.get('decision_model.dense1.weight')
+    if style_weight is None or history_weight is None or dense_weight is None:
+        return None
+
+    style_dim = style_weight.shape[0] // 4
+    history_dim = history_weight.shape[0] // 4
+    x_dim = dense_weight.shape[1] - history_dim - 2 * style_dim
+    if x_dim <= 0:
+        return None
+    return dict(x_dim=x_dim, style_dim=style_dim, history_dim=history_dim)
+
+
+def build_style_model(position, state_dict=None):
+    model_cls = model_dict[position]
+    if state_dict is None:
+        return model_cls()
+
+    dims = infer_style_model_dims(state_dict, position)
+    if dims is None:
+        return model_cls()
+    return model_cls(**dims)
 
 style_model_dict = {
     'landlord': LandlordStylePredictModel,

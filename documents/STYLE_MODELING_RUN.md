@@ -83,6 +83,7 @@ This uses GPU learner, multiple actors, and default-sized eval runs.
 
 ```bash
 /home/quiet98k/Code/Spring26/RL-Project/StyleDou/.venv/bin/python train_style.py \
+  --load_model \
   --xpid style_model \
   --run_eval_on_checkpoint \
   --save_interval 30 \
