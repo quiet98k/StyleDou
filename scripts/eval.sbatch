@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=douzero_eval
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:a6000:2
+#SBATCH --gres=gpu:a5000:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --time=1-00:00:00
@@ -17,7 +17,13 @@ echo "Node: $(hostname)"
 echo "Working dir: $(pwd)"
 echo "========================================"
 
-source "$(conda info --base)/etc/profile.d/conda.sh"
+CONDA_SH="$HOME/miniconda3/etc/profile.d/conda.sh"
+if [[ ! -f "$CONDA_SH" ]]; then
+    echo "Conda init script not found: $CONDA_SH" >&2
+    exit 1
+fi
+
+source "$CONDA_SH"
 conda activate dou
 
 cd /home/users/yf201/Code/RL-Project/StyleDou
@@ -41,53 +47,30 @@ EOF
 export PYTHONHASHSEED=0
 
 echo -e "\n========================================"
-echo "Generating evaluation data..."
+echo "Using existing most recent checkpoints..."
 echo "========================================"
-python3 generate_eval_data.py --output eval_data --num_games 10000
+missing_ckpt=0
+for ckpt in most_recent_model/landlord.ckpt most_recent_model/landlord_up.ckpt most_recent_model/landlord_down.ckpt; do
+    if [[ ! -f "$ckpt" ]]; then
+        echo "Missing checkpoint: $ckpt"
+        missing_ckpt=1
+    fi
+done
+
+if [[ "$missing_ckpt" -eq 1 ]]; then
+    echo "Refreshing most_recent_model from douzero_checkpoints/style/style_model..."
+    bash get_most_recent.sh douzero_checkpoints/style/style_model most_recent_model
+fi
 
 echo -e "\n========================================"
-echo "Eval 1/4: Trained Landlord vs Random Peasants"
+echo "Running full round-robin evaluation..."
 echo "========================================"
-python3 evaluate.py \
-    --landlord baselines/douzero_ADP/landlord.ckpt \
-    --landlord_up random \
-    --landlord_down random \
-    --eval_data eval_data.pkl \
-    --num_workers 16 \
-    --gpu_device "$CUDA_VISIBLE_DEVICES"
-
-echo -e "\n========================================"
-echo "Eval 2/4: Trained Landlord vs RLCard Peasants"
-echo "========================================"
-python3 evaluate.py \
-    --landlord baselines/douzero_ADP/landlord.ckpt \
-    --landlord_up rlcard \
-    --landlord_down rlcard \
-    --eval_data eval_data.pkl \
-    --num_workers 16 \
-    --gpu_device "$CUDA_VISIBLE_DEVICES"
-
-echo -e "\n========================================"
-echo "Eval 3/4: Trained Peasants vs Random Landlord"
-echo "========================================"
-python3 evaluate.py \
-    --landlord random \
-    --landlord_up baselines/douzero_ADP/landlord_up.ckpt \
-    --landlord_down baselines/douzero_ADP/landlord_down.ckpt \
-    --eval_data eval_data.pkl \
-    --num_workers 16 \
-    --gpu_device "$CUDA_VISIBLE_DEVICES"
-
-echo -e "\n========================================"
-echo "Eval 4/4: Trained Peasants vs RLCard Landlord"
-echo "========================================"
-python3 evaluate.py \
-    --landlord rlcard \
-    --landlord_up baselines/douzero_ADP/landlord_up.ckpt \
-    --landlord_down baselines/douzero_ADP/landlord_down.ckpt \
-    --eval_data eval_data.pkl \
-    --num_workers 16 \
-    --gpu_device "$CUDA_VISIBLE_DEVICES"
+python3 evaluate_all_models.py \
+    --eval-data eval_data.pkl \
+    --num-games 10000 \
+    --num-workers 16 \
+    --style-dir most_recent_model \
+    --output-dir model_eval_results
 
 echo -e "\n========================================"
 echo "Evaluation complete!"

@@ -3,6 +3,7 @@
 import argparse
 import csv
 import html
+import itertools
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
@@ -125,7 +126,13 @@ def reset_counters() -> None:
             counter.value = 0
 
 
-def run_matchup(landlord_agent: AgentSpec, farmer_agent: AgentSpec, eval_data_path: Path, num_workers: int) -> Dict[str, float]:
+def run_three_player_matchup(
+    landlord_agent: AgentSpec,
+    landlord_up_agent: AgentSpec,
+    landlord_down_agent: AgentSpec,
+    eval_data_path: Path,
+    num_workers: int,
+) -> Dict[str, float]:
     reset_counters()
 
     with eval_data_path.open('rb') as handle:
@@ -134,8 +141,8 @@ def run_matchup(landlord_agent: AgentSpec, farmer_agent: AgentSpec, eval_data_pa
     batches = style_simulation.data_allocation_per_worker(card_play_data_list, num_workers)
     model_path_dict = {
         'landlord': landlord_agent.landlord,
-        'landlord_up': farmer_agent.landlord_up,
-        'landlord_down': farmer_agent.landlord_down,
+        'landlord_up': landlord_up_agent.landlord_up,
+        'landlord_down': landlord_down_agent.landlord_down,
     }
 
     with mp.Pool(processes=num_workers) as pool:
@@ -163,6 +170,16 @@ def run_matchup(landlord_agent: AgentSpec, farmer_agent: AgentSpec, eval_data_pa
     }
 
 
+def run_matchup(landlord_agent: AgentSpec, farmer_agent: AgentSpec, eval_data_path: Path, num_workers: int) -> Dict[str, float]:
+    return run_three_player_matchup(
+        landlord_agent,
+        farmer_agent,
+        farmer_agent,
+        eval_data_path,
+        num_workers,
+    )
+
+
 def write_csv(results: List[Dict[str, float]], output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
@@ -179,13 +196,31 @@ def write_csv(results: List[Dict[str, float]], output_path: Path) -> None:
         writer.writerows(results)
 
 
+def write_mixed_csv(results: List[Dict[str, float]], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        'landlord_agent',
+        'landlord_up_agent',
+        'landlord_down_agent',
+        'wp_landlord',
+        'wp_farmer',
+        'adp_landlord',
+        'adp_farmer',
+    ]
+    with output_path.open('w', newline='') as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(results)
+
+
 def build_markdown_style_block() -> str:
     return '\n'.join([
         '<style>',
         '.matrix-table { border-collapse: collapse; margin: 12px 0 24px; }',
         '.matrix-table th, .matrix-table td { border: 1px solid #999; padding: 8px 10px; text-align: center; vertical-align: middle; }',
-        '.matrix-table thead th { background: #f3f3f3; }',
-        '.matrix-row-header { background: #f9f9f9; font-weight: 600; }',
+        '.matrix-table th { color: #000; }',
+        '.matrix-table thead th { background: #f3f3f3; color: #000; }',
+        '.matrix-row-header { background: #f9f9f9; font-weight: 600; color: #000; }',
         '.matrix-corner { position: relative; min-width: 112px; width: 112px; height: 72px; padding: 0; background: linear-gradient(to bottom right, transparent 49.2%, #666 49.5%, #666 50.5%, transparent 50.8%), linear-gradient(135deg, #f9f9f9 0%, #f9f9f9 49.5%, #eef4ff 50.5%, #eef4ff 100%); }',
         '.matrix-corner .corner-landlord { position: absolute; left: 10px; bottom: 8px; font-weight: 600; color: #000; }',
         '.matrix-corner .corner-farmers { position: absolute; right: 10px; top: 8px; font-weight: 600; color: #000; }',
@@ -265,6 +300,81 @@ def write_markdown(agent_names: List[str], results: List[Dict[str, float]], outp
     output_path.write_text('\n'.join(sections))
 
 
+def format_mixed_summary(agent_names: List[str], results: List[Dict[str, float]]) -> str:
+    landlord_summary = {name: {'wp': [], 'adp': []} for name in agent_names}
+    landlord_up_summary = {name: {'wp': [], 'adp': []} for name in agent_names}
+    landlord_down_summary = {name: {'wp': [], 'adp': []} for name in agent_names}
+
+    for row in results:
+        landlord_summary[row['landlord_agent']]['wp'].append(row['wp_landlord'])
+        landlord_summary[row['landlord_agent']]['adp'].append(row['adp_landlord'])
+        landlord_up_summary[row['landlord_up_agent']]['wp'].append(row['wp_farmer'])
+        landlord_up_summary[row['landlord_up_agent']]['adp'].append(row['adp_farmer'])
+        landlord_down_summary[row['landlord_down_agent']]['wp'].append(row['wp_farmer'])
+        landlord_down_summary[row['landlord_down_agent']]['adp'].append(row['adp_farmer'])
+
+    lines = [
+        '# Mixed Seat Summary',
+        '',
+        '| agent | avg_landlord_wp | avg_landlord_adp | avg_landlord_up_farmer_wp | avg_landlord_up_farmer_adp | avg_landlord_down_farmer_wp | avg_landlord_down_farmer_adp |',
+        '| --- | --- | --- | --- | --- | --- | --- |',
+    ]
+    for agent_name in agent_names:
+        avg_landlord_wp = np.mean(landlord_summary[agent_name]['wp'])
+        avg_landlord_adp = np.mean(landlord_summary[agent_name]['adp'])
+        avg_landlord_up_wp = np.mean(landlord_up_summary[agent_name]['wp'])
+        avg_landlord_up_adp = np.mean(landlord_up_summary[agent_name]['adp'])
+        avg_landlord_down_wp = np.mean(landlord_down_summary[agent_name]['wp'])
+        avg_landlord_down_adp = np.mean(landlord_down_summary[agent_name]['adp'])
+        lines.append(
+            '| {} | {:.4f} | {:.4f} | {:.4f} | {:.4f} | {:.4f} | {:.4f} |'.format(
+                agent_name,
+                avg_landlord_wp,
+                avg_landlord_adp,
+                avg_landlord_up_wp,
+                avg_landlord_up_adp,
+                avg_landlord_down_wp,
+                avg_landlord_down_adp,
+            )
+        )
+    lines.append('')
+    return '\n'.join(lines)
+
+
+def format_mixed_table(results: List[Dict[str, float]]) -> str:
+    lines = [
+        '# All-Different Three-Player Mixtures',
+        '',
+        '| landlord_agent | landlord_up_agent | landlord_down_agent | wp_landlord | wp_farmer | adp_landlord | adp_farmer |',
+        '| --- | --- | --- | --- | --- | --- | --- |',
+    ]
+    for row in results:
+        lines.append(
+            '| {} | {} | {} | {:.4f} | {:.4f} | {:.4f} | {:.4f} |'.format(
+                row['landlord_agent'],
+                row['landlord_up_agent'],
+                row['landlord_down_agent'],
+                row['wp_landlord'],
+                row['wp_farmer'],
+                row['adp_landlord'],
+                row['adp_farmer'],
+            )
+        )
+    lines.append('')
+    return '\n'.join(lines)
+
+
+def write_mixed_markdown(agent_names: List[str], results: List[Dict[str, float]], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    sections = [
+        '# Model Round Robin Mixed Seats',
+        '',
+        format_mixed_summary(agent_names, results),
+        format_mixed_table(results),
+    ]
+    output_path.write_text('\n'.join(sections))
+
+
 def print_run_config(args: argparse.Namespace, agent_names: List[str], eval_data_path: Path, style_dir: Path, output_dir: Path) -> None:
     seed_text = str(args.seed) if args.seed is not None else 'random'
     print('Evaluation config:')
@@ -310,13 +420,48 @@ def main() -> None:
                 )
             )
 
+    mixed_results: List[Dict[str, float]] = []
+    mixed_triplets = list(itertools.permutations(agent_names, 3))
+    total_mixed_matchups = len(mixed_triplets)
+    for matchup_index, (landlord_name, landlord_up_name, landlord_down_name) in enumerate(mixed_triplets, start=1):
+        print(
+            f'[{matchup_index}/{total_mixed_matchups}] mixed {landlord_name} vs '
+            f'({landlord_up_name}, {landlord_down_name})'
+        )
+        metrics = run_three_player_matchup(
+            agents[landlord_name],
+            agents[landlord_up_name],
+            agents[landlord_down_name],
+            eval_data_path,
+            args.num_workers,
+        )
+        result = {
+            'landlord_agent': landlord_name,
+            'landlord_up_agent': landlord_up_name,
+            'landlord_down_agent': landlord_down_name,
+            **metrics,
+        }
+        mixed_results.append(result)
+        print(
+            '  wp_landlord={:.4f} adp_landlord={:.4f}'.format(
+                metrics['wp_landlord'],
+                metrics['adp_landlord'],
+            )
+        )
+
     csv_path = output_dir / 'model_round_robin.csv'
     markdown_path = output_dir / 'model_round_robin.md'
+    mixed_csv_path = output_dir / 'model_round_robin_mixed.csv'
+    mixed_markdown_path = output_dir / 'model_round_robin_mixed.md'
     write_csv(results, csv_path)
     write_markdown(agent_names, results, markdown_path)
+    write_mixed_csv(mixed_results, mixed_csv_path)
+    write_mixed_markdown(agent_names, mixed_results, mixed_markdown_path)
 
     print(f'Wrote CSV to {csv_path}')
     print(f'Wrote Markdown table to {markdown_path}')
+    print(f'Wrote mixed CSV to {mixed_csv_path}')
+    print(f'Wrote mixed Markdown table to {mixed_markdown_path}')
 
 
 if __name__ == '__main__':
