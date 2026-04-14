@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=douzero_train_baseline
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:a6000:2
-#SBATCH --cpus-per-task=16
+#SBATCH --gres=gpu:a5000:3
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --time=7-00:00:00
 #SBATCH --output=logs/train_baseline_%j.log
@@ -20,7 +20,13 @@ echo "Node: $(hostname)"
 echo "Working dir: $WORKDIR"
 echo "========================================"
 
-source "$(conda info --base)/etc/profile.d/conda.sh"
+CONDA_SH="$HOME/miniconda3/etc/profile.d/conda.sh"
+if [[ ! -f "$CONDA_SH" ]]; then
+  echo "Conda init script not found: $CONDA_SH" >&2
+  exit 1
+fi
+
+source "$CONDA_SH"
 conda activate dou
 
 cd "$WORKDIR"
@@ -29,17 +35,17 @@ mkdir -p logs
 # ------------------------------
 # Training config (override via env)
 # Example:
-# sbatch --export=ALL,GPU_DEVICES=0,1,2,3,NUM_ACTOR_DEVICES=3,NUM_ACTORS=15,TRAINING_DEVICE=3,TOTAL_FRAMES=50000000 scripts/train_baseline.sbatch
+# sbatch --export=ALL,GPU_DEVICES=0,1,NUM_ACTOR_DEVICES=2,NUM_ACTORS=10,TRAINING_DEVICE=0,TOTAL_FRAMES=500000000 scripts/train_baseline.sbatch
 # ------------------------------
-GPU_DEVICES=${GPU_DEVICES:-0,1}
-NUM_ACTOR_DEVICES=${NUM_ACTOR_DEVICES:-1}
-NUM_ACTORS=${NUM_ACTORS:-5}
+GPU_DEVICES=${GPU_DEVICES:-}
+NUM_ACTOR_DEVICES=${NUM_ACTOR_DEVICES:-}
+NUM_ACTORS=${NUM_ACTORS:-}
 TRAINING_DEVICE=${TRAINING_DEVICE:-0}
 OBJECTIVE=${OBJECTIVE:-adp}
-TOTAL_FRAMES=${TOTAL_FRAMES:-200000000}
+TOTAL_FRAMES=${TOTAL_FRAMES:-500000000}
 XPID=${XPID:-baseline}
 SAVEDIR=${SAVEDIR:-douzero_checkpoints/baseline}
-SAVE_INTERVAL=${SAVE_INTERVAL:-30}
+SAVE_INTERVAL=${SAVE_INTERVAL:-60}
 BATCH_SIZE=${BATCH_SIZE:-32}
 UNROLL_LENGTH=${UNROLL_LENGTH:-100}
 NUM_BUFFERS=${NUM_BUFFERS:-50}
@@ -49,6 +55,27 @@ export PYTHONHASHSEED=0
 
 echo "Allocated GPUs (CUDA_VISIBLE_DEVICES from Slurm): $CUDA_VISIBLE_DEVICES"
 nvidia-smi
+
+GPU_COUNT=$(nvidia-smi -L | wc -l | tr -d ' ')
+if [[ "$GPU_COUNT" -lt 1 ]]; then
+  echo "Expected at least 1 GPU on this node, but only saw ${GPU_COUNT}."
+  exit 1
+fi
+
+# Derive defaults from allocated GPUs when not provided.
+if [[ -z "$GPU_DEVICES" ]]; then
+  if [[ "$GPU_COUNT" -eq 1 ]]; then
+    GPU_DEVICES="0"
+  else
+    GPU_DEVICES=$(seq -s, 0 $((GPU_COUNT - 1)))
+  fi
+fi
+if [[ -z "$NUM_ACTOR_DEVICES" ]]; then
+  NUM_ACTOR_DEVICES="$GPU_COUNT"
+fi
+if [[ -z "$NUM_ACTORS" ]]; then
+  NUM_ACTORS=10
+fi
 
 echo -e "\n========================================"
 echo "Checking PyTorch CUDA..."

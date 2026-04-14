@@ -71,6 +71,19 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help='Optional numpy seed for eval data generation. Omit it to use random entropy each run.',
     )
+    parser.add_argument(
+        '--include-mixed',
+        dest='include_mixed',
+        action='store_true',
+        help='Also run all-different three-player mixed-seat evaluation.',
+    )
+    parser.add_argument(
+        '--no-mixed',
+        dest='include_mixed',
+        action='store_false',
+        help='Skip all-different three-player mixed-seat evaluation and only run the standard full round robin.',
+    )
+    parser.set_defaults(include_mixed=True)
     return parser.parse_args()
 
 
@@ -384,6 +397,7 @@ def print_run_config(args: argparse.Namespace, agent_names: List[str], eval_data
     print(f'  style_dir: {style_dir}')
     print(f'  output_dir: {output_dir}')
     print(f'  seed: {seed_text}')
+    print(f'  include_mixed: {args.include_mixed}')
     print(f'  agent_order: {", ".join(agent_names)}')
 
 
@@ -421,47 +435,49 @@ def main() -> None:
             )
 
     mixed_results: List[Dict[str, float]] = []
-    mixed_triplets = list(itertools.permutations(agent_names, 3))
-    total_mixed_matchups = len(mixed_triplets)
-    for matchup_index, (landlord_name, landlord_up_name, landlord_down_name) in enumerate(mixed_triplets, start=1):
-        print(
-            f'[{matchup_index}/{total_mixed_matchups}] mixed {landlord_name} vs '
-            f'({landlord_up_name}, {landlord_down_name})'
-        )
-        metrics = run_three_player_matchup(
-            agents[landlord_name],
-            agents[landlord_up_name],
-            agents[landlord_down_name],
-            eval_data_path,
-            args.num_workers,
-        )
-        result = {
-            'landlord_agent': landlord_name,
-            'landlord_up_agent': landlord_up_name,
-            'landlord_down_agent': landlord_down_name,
-            **metrics,
-        }
-        mixed_results.append(result)
-        print(
-            '  wp_landlord={:.4f} adp_landlord={:.4f}'.format(
-                metrics['wp_landlord'],
-                metrics['adp_landlord'],
+    if args.include_mixed:
+        mixed_triplets = list(itertools.permutations(agent_names, 3))
+        total_mixed_matchups = len(mixed_triplets)
+        for matchup_index, (landlord_name, landlord_up_name, landlord_down_name) in enumerate(mixed_triplets, start=1):
+            print(
+                f'[{matchup_index}/{total_mixed_matchups}] mixed {landlord_name} vs '
+                f'({landlord_up_name}, {landlord_down_name})'
             )
-        )
+            metrics = run_three_player_matchup(
+                agents[landlord_name],
+                agents[landlord_up_name],
+                agents[landlord_down_name],
+                eval_data_path,
+                args.num_workers,
+            )
+            result = {
+                'landlord_agent': landlord_name,
+                'landlord_up_agent': landlord_up_name,
+                'landlord_down_agent': landlord_down_name,
+                **metrics,
+            }
+            mixed_results.append(result)
+            print(
+                '  wp_landlord={:.4f} adp_landlord={:.4f}'.format(
+                    metrics['wp_landlord'],
+                    metrics['adp_landlord'],
+                )
+            )
 
     csv_path = output_dir / 'model_round_robin.csv'
     markdown_path = output_dir / 'model_round_robin.md'
-    mixed_csv_path = output_dir / 'model_round_robin_mixed.csv'
-    mixed_markdown_path = output_dir / 'model_round_robin_mixed.md'
     write_csv(results, csv_path)
     write_markdown(agent_names, results, markdown_path)
-    write_mixed_csv(mixed_results, mixed_csv_path)
-    write_mixed_markdown(agent_names, mixed_results, mixed_markdown_path)
 
     print(f'Wrote CSV to {csv_path}')
     print(f'Wrote Markdown table to {markdown_path}')
-    print(f'Wrote mixed CSV to {mixed_csv_path}')
-    print(f'Wrote mixed Markdown table to {mixed_markdown_path}')
+    if args.include_mixed:
+        mixed_csv_path = output_dir / 'model_round_robin_mixed.csv'
+        mixed_markdown_path = output_dir / 'model_round_robin_mixed.md'
+        write_mixed_csv(mixed_results, mixed_csv_path)
+        write_mixed_markdown(agent_names, mixed_results, mixed_markdown_path)
+        print(f'Wrote mixed CSV to {mixed_csv_path}')
+        print(f'Wrote mixed Markdown table to {mixed_markdown_path}')
 
 
 if __name__ == '__main__':

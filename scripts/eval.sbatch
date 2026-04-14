@@ -70,7 +70,8 @@ python3 evaluate_all_models.py \
     --num-games 10000 \
     --num-workers 16 \
     --style-dir most_recent_model \
-    --output-dir model_eval_results
+    --output-dir model_eval_results \
+    --no-mixed
 
 echo -e "\n========================================"
 echo "Evaluation complete!"
