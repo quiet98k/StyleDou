@@ -227,19 +227,40 @@ def train(flags):
                     model_name='style_' + k,
                 )
 
-    if flags.load_model and os.path.exists(checkpointpath):
-        checkpoint_states = torch.load(
-            checkpointpath, map_location="cuda:" + str(flags.training_device)
+    if flags.load_model:
+        log.logger.info(
+            "--load_model enabled. Looking for resume checkpoint at %s",
+            checkpointpath,
         )
-        for k in ['landlord', 'landlord_up', 'landlord_down']:
-            learner_model.get_model(k).load_state_dict(checkpoint_states["model_state_dict"][k])
-            optimizers[k].load_state_dict(checkpoint_states["optimizer_state_dict"][k])
-            for device in range(flags.num_actor_devices):
-                models[device].get_model(k).load_state_dict(learner_model.get_model(k).state_dict())
-        stats = checkpoint_states["stats"]
-        frames = checkpoint_states["frames"]
-        position_frames = checkpoint_states["position_frames"]
-        log.logger.info(f"Resuming preempted job, current stats:\n{stats}")
+        if os.path.exists(checkpointpath):
+            log.logger.info(
+                "Found resume checkpoint at %s. Loading model and optimizer state "
+                "(including style submodels).",
+                checkpointpath,
+            )
+            checkpoint_states = torch.load(
+                checkpointpath, map_location="cuda:" + str(flags.training_device)
+            )
+            for k in ['landlord', 'landlord_up', 'landlord_down']:
+                learner_model.get_model(k).load_state_dict(checkpoint_states["model_state_dict"][k])
+                optimizers[k].load_state_dict(checkpoint_states["optimizer_state_dict"][k])
+                for device in range(flags.num_actor_devices):
+                    models[device].get_model(k).load_state_dict(learner_model.get_model(k).state_dict())
+            stats = checkpoint_states["stats"]
+            frames = checkpoint_states["frames"]
+            position_frames = checkpoint_states["position_frames"]
+            log.logger.info(
+                "Resume checkpoint loaded successfully: frames=%d, position_frames=%s",
+                frames,
+                position_frames,
+            )
+            log.logger.info(f"Resuming preempted job, current stats:\n{stats}")
+        else:
+            log.logger.warning(
+                "--load_model was set, but no checkpoint was found at %s. "
+                "Training will continue from init/bootstrap weights.",
+                checkpointpath,
+            )
 
     for device in range(flags.num_actor_devices):
         for i in range(flags.num_actors):

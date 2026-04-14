@@ -234,3 +234,5 @@ logs/
 *checkpoints/
 
 *.ckpt
+
+.codex

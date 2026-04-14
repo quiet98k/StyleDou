@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=douzero_train_style
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:v100:3
+#SBATCH --gres=gpu:a5000:4
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
-#SBATCH --time=7-00:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --output=logs/train_style_%j.log
 #SBATCH --partition=compsci-gpu
 
@@ -67,8 +67,8 @@ if [[ "$GPU_COUNT" -lt 1 ]]; then
   echo "Expected at least 1 GPU on this node, but only saw ${GPU_COUNT}."
   exit 1
 fi
-if ! nvidia-smi -L | grep -Eiq "V100|v100"; then
-  echo "Expected V100 GPUs, but did not detect V100 in nvidia-smi."
+if ! nvidia-smi -L | grep -Eiq "A5000|a5000"; then
+  echo "Expected A5000 GPUs, but did not detect A5000 in nvidia-smi."
   exit 1
 fi
 
