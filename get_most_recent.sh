@@ -27,21 +27,31 @@ latest_ckpt() {
 	printf '%s\n' "$latest"
 }
 
+latest_ckpt_optional() {
+	local prefix=$1
+	local latest
+
+	latest=$(find "$checkpoint_dir" -maxdepth 1 -type f -name "${prefix}*.ckpt" | sort -V | tail -n 1)
+	printf '%s\n' "$latest"
+}
+
 landlord_path=$(latest_ckpt landlord_weights_)
 landlord_up_path=$(latest_ckpt landlord_up_weights_)
 landlord_down_path=$(latest_ckpt landlord_down_weights_)
-style_landlord_path=$(latest_ckpt style_landlord_weights_)
-style_landlord_up_path=$(latest_ckpt style_landlord_up_weights_)
-style_landlord_down_path=$(latest_ckpt style_landlord_down_weights_)
+style_landlord_path=$(latest_ckpt_optional style_landlord_weights_)
+style_landlord_up_path=$(latest_ckpt_optional style_landlord_up_weights_)
+style_landlord_down_path=$(latest_ckpt_optional style_landlord_down_weights_)
 
 printf '%s\n' "$landlord_path" "$landlord_up_path" "$landlord_down_path"
-printf '%s\n' "$style_landlord_path" "$style_landlord_up_path" "$style_landlord_down_path"
+[[ -n "$style_landlord_path" ]] && printf '%s\n' "$style_landlord_path" "$style_landlord_up_path" "$style_landlord_down_path"
 
 mkdir -p "$output_dir"
 
 cp "$landlord_path" "$output_dir/landlord.ckpt"
 cp "$landlord_up_path" "$output_dir/landlord_up.ckpt"
 cp "$landlord_down_path" "$output_dir/landlord_down.ckpt"
-cp "$style_landlord_path" "$output_dir/style_landlord.ckpt"
-cp "$style_landlord_up_path" "$output_dir/style_landlord_up.ckpt"
-cp "$style_landlord_down_path" "$output_dir/style_landlord_down.ckpt"
+if [[ -n "$style_landlord_path" ]]; then
+	cp "$style_landlord_path" "$output_dir/style_landlord.ckpt"
+	cp "$style_landlord_up_path" "$output_dir/style_landlord_up.ckpt"
+	cp "$style_landlord_down_path" "$output_dir/style_landlord_down.ckpt"
+fi

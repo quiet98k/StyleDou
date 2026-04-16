@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=douzero_train_baseline
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:a5000:3
+#SBATCH --gres=gpu:v100:2
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --time=7-00:00:00
@@ -35,7 +35,7 @@ mkdir -p logs
 # ------------------------------
 # Training config (override via env)
 # Example:
-# sbatch --export=ALL,GPU_DEVICES=0,1,NUM_ACTOR_DEVICES=2,NUM_ACTORS=10,TRAINING_DEVICE=0,TOTAL_FRAMES=500000000 scripts/train_baseline.sbatch
+# sbatch --export=ALL,GPU_DEVICES=0,1,2,NUM_ACTOR_DEVICES=3,NUM_ACTORS=10,TRAINING_DEVICE=0,TOTAL_FRAMES=500000000 scripts/train_baseline.sbatch
 # ------------------------------
 GPU_DEVICES=${GPU_DEVICES:-}
 NUM_ACTOR_DEVICES=${NUM_ACTOR_DEVICES:-}
@@ -43,7 +43,7 @@ NUM_ACTORS=${NUM_ACTORS:-}
 TRAINING_DEVICE=${TRAINING_DEVICE:-0}
 OBJECTIVE=${OBJECTIVE:-adp}
 TOTAL_FRAMES=${TOTAL_FRAMES:-500000000}
-XPID=${XPID:-baseline}
+XPID=${XPID:-baseline_v100}
 SAVEDIR=${SAVEDIR:-douzero_checkpoints/baseline}
 SAVE_INTERVAL=${SAVE_INTERVAL:-60}
 BATCH_SIZE=${BATCH_SIZE:-32}

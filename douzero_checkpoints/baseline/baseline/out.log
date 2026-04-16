@@ -4,3 +4,6 @@ Updated log fields: ['_tick', '_time', 'frames', 'mean_episode_return_landlord',
 Saving logs data to douzero_checkpoints/baseline/baseline/logs.csv
 Saving logs' fields to douzero_checkpoints/baseline/baseline/fields.csv
 Path to log file already exists. New data will be appended.
+Saving logs data to douzero_checkpoints/baseline/baseline/logs.csv
+Saving logs' fields to douzero_checkpoints/baseline/baseline/fields.csv
+Path to log file already exists. New data will be appended.

@@ -1,0 +1,12 @@
+Saving logs data to douzero_checkpoints/style/style_model_new/logs/logs.csv
+Saving logs' fields to douzero_checkpoints/style/style_model_new/logs/fields.csv
+Updated log fields: ['_tick', '_time', 'frames', 'mean_episode_return_landlord', 'loss_landlord', 'aux_loss_landlord', 'mean_episode_return_landlord_up', 'loss_landlord_up', 'aux_loss_landlord_up', 'mean_episode_return_landlord_down', 'loss_landlord_down', 'aux_loss_landlord_down']
+Saving logs data to douzero_checkpoints/style/style_model_new/logs/logs.csv
+Saving logs' fields to douzero_checkpoints/style/style_model_new/logs/fields.csv
+Path to log file already exists. New data will be appended.
+Saving logs data to douzero_checkpoints/style/style_model_new/logs/logs.csv
+Saving logs' fields to douzero_checkpoints/style/style_model_new/logs/fields.csv
+Path to log file already exists. New data will be appended.
+Saving logs data to douzero_checkpoints/style/style_model_new/logs/logs.csv
+Saving logs' fields to douzero_checkpoints/style/style_model_new/logs/fields.csv
+Path to log file already exists. New data will be appended.

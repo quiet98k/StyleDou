@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=douzero_train_style
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:a5000:4
-#SBATCH --cpus-per-task=16
+#SBATCH --gres=gpu:a5000:3
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
-#SBATCH --time=2-00:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH --output=logs/train_style_%j.log
 #SBATCH --partition=compsci-gpu
 
@@ -20,7 +20,13 @@ echo "Node: $(hostname)"
 echo "Working dir: $WORKDIR"
 echo "========================================"
 
-source "$(conda info --base)/etc/profile.d/conda.sh"
+CONDA_SH="$HOME/miniconda3/etc/profile.d/conda.sh"
+if [[ ! -f "$CONDA_SH" ]]; then
+  echo "Conda init script not found: $CONDA_SH" >&2
+  exit 1
+fi
+
+source "$CONDA_SH"
 conda activate dou
 
 cd "$WORKDIR"
@@ -36,10 +42,10 @@ NUM_ACTOR_DEVICES=${NUM_ACTOR_DEVICES:-}
 NUM_ACTORS=${NUM_ACTORS:-}
 TRAINING_DEVICE=${TRAINING_DEVICE:-0}
 OBJECTIVE=${OBJECTIVE:-adp}
-TOTAL_FRAMES=${TOTAL_FRAMES:-1000000000}
-XPID=${XPID:-style_model}
+TOTAL_FRAMES=${TOTAL_FRAMES:-500000000}
+XPID=${XPID:-style_model_new}
 SAVEDIR=${SAVEDIR:-douzero_checkpoints/style}
-SAVE_INTERVAL=${SAVE_INTERVAL:-120}
+SAVE_INTERVAL=${SAVE_INTERVAL:-60}
 BATCH_SIZE=${BATCH_SIZE:-32}
 UNROLL_LENGTH=${UNROLL_LENGTH:-100}
 NUM_BUFFERS=${NUM_BUFFERS:-50}
@@ -84,7 +90,7 @@ if [[ -z "$NUM_ACTOR_DEVICES" ]]; then
   NUM_ACTOR_DEVICES="$GPU_COUNT"
 fi
 if [[ -z "$NUM_ACTORS" ]]; then
-  NUM_ACTORS=5
+  NUM_ACTORS=10
 fi
 
 echo -e "\n========================================"
@@ -117,8 +123,8 @@ echo "style_embed_dim=${STYLE_EMBED_DIM}"
 echo "history_embed_dim=${HISTORY_EMBED_DIM}"
 echo "========================================"
 
+  # --load_model \
 python3 train_style.py \
-  --load_model \
   --run_eval_on_checkpoint \
   --gpu_devices "${GPU_DEVICES}" \
   --num_actor_devices "${NUM_ACTOR_DEVICES}" \
