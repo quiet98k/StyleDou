@@ -1,5 +1,6 @@
 import multiprocessing as mp
 import pickle
+import os
 
 from style_modeling.env.game import GameEnv
 
@@ -13,18 +14,22 @@ def load_card_play_models(card_play_model_path_dict):
     players = {}
 
     for position in ['landlord', 'landlord_up', 'landlord_down']:
-        if card_play_model_path_dict[position] == 'rlcard':
+        path = card_play_model_path_dict[position]
+        if path == 'rlcard':
             from .rlcard_agent import RLCardAgent
             players[position] = RLCardAgent(position)
-        elif card_play_model_path_dict[position] == 'random':
+        elif path == 'random':
             from .random_agent import RandomAgent
             players[position] = RandomAgent()
-        elif 'baseline' in card_play_model_path_dict[position]:
+        elif path in ('baseline_ADP', 'baseline_WP', 'baseline_sl'):
             from .baseline_agent import BaseAgent
-            players[position] = BaseAgent(position, card_play_model_path_dict[position])
+            players[position] = BaseAgent(position, path)
+        elif os.sep in path and 'baseline' in os.path.basename(os.path.dirname(os.path.abspath(path))):
+            from .baseline_agent import BaseAgent
+            players[position] = BaseAgent(position, path)
         else:
             from .deep_agent import DeepAgent
-            players[position] = DeepAgent(position, card_play_model_path_dict[position])
+            players[position] = DeepAgent(position, path)
     return players
 
 

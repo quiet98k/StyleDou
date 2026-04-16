@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=douzero_train_style
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:a5000:3
+#SBATCH --gres=gpu:a6000:3
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --time=3-00:00:00
@@ -20,14 +20,13 @@ echo "Node: $(hostname)"
 echo "Working dir: $WORKDIR"
 echo "========================================"
 
-CONDA_SH="$HOME/miniconda3/etc/profile.d/conda.sh"
-if [[ ! -f "$CONDA_SH" ]]; then
-  echo "Conda init script not found: $CONDA_SH" >&2
+VENV_DIR=${VENV_DIR:-$WORKDIR/.venv}
+if [[ ! -f "$VENV_DIR/bin/activate" ]]; then
+  echo "Virtualenv activate script not found: $VENV_DIR/bin/activate" >&2
   exit 1
 fi
 
-source "$CONDA_SH"
-conda activate dou
+source "$VENV_DIR/bin/activate"
 
 cd "$WORKDIR"
 mkdir -p logs
@@ -71,10 +70,6 @@ nvidia-smi
 GPU_COUNT=$(nvidia-smi -L | wc -l | tr -d ' ')
 if [[ "$GPU_COUNT" -lt 1 ]]; then
   echo "Expected at least 1 GPU on this node, but only saw ${GPU_COUNT}."
-  exit 1
-fi
-if ! nvidia-smi -L | grep -Eiq "A5000|a5000"; then
-  echo "Expected A5000 GPUs, but did not detect A5000 in nvidia-smi."
   exit 1
 fi
 
@@ -123,8 +118,9 @@ echo "style_embed_dim=${STYLE_EMBED_DIM}"
 echo "history_embed_dim=${HISTORY_EMBED_DIM}"
 echo "========================================"
 
-  # --load_model \
+
 python3 train_style.py \
+  --load_model \
   --run_eval_on_checkpoint \
   --gpu_devices "${GPU_DEVICES}" \
   --num_actor_devices "${NUM_ACTOR_DEVICES}" \

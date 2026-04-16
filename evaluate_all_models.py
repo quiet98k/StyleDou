@@ -23,6 +23,8 @@ AGENT_ORDER = [
     'baseline_SL',
     'rlcard',
     'random',
+    'style_model_1B',
+    'baseline_500M',
 ]
 
 
@@ -84,6 +86,29 @@ def parse_args() -> argparse.Namespace:
         help='Skip all-different three-player mixed-seat evaluation and only run the standard full round robin.',
     )
     parser.set_defaults(include_mixed=True)
+    parser.add_argument(
+        '--style-model-name',
+        default='style_model',
+        help='Label to use for the style model agent in results (default: style_model).',
+    )
+    parser.add_argument(
+        '--extra-baseline-agent',
+        action='append',
+        default=[],
+        metavar='NAME:DIR',
+        help='Add a baseline-architecture agent loaded from a checkpoint directory. '
+             'Format: NAME:DIR where DIR contains landlord.ckpt etc. Repeatable.',
+    )
+    parser.add_argument(
+        '--focus-agent',
+        default=None,
+        help='If set, only run matchups where this agent is the landlord or farmer.',
+    )
+    parser.add_argument(
+        '--output-suffix',
+        default='',
+        help='Suffix to append to output CSV/Markdown filenames (e.g. _baseline_500M).',
+    )
     return parser.parse_args()
 
 
@@ -101,7 +126,11 @@ def ensure_eval_data(eval_data_path: Path, num_games: int, seed: int | None) -> 
     print(f'Saved evaluation data to {eval_data_path}')
 
 
-def build_agents(style_dir: Path) -> Dict[str, AgentSpec]:
+def build_agents(
+    style_dir: Path,
+    style_model_name: str = 'style_model',
+    extra_baseline_agents: list | None = None,
+) -> Dict[str, AgentSpec]:
     style_paths = {
         'landlord': style_dir / 'landlord.ckpt',
         'landlord_up': style_dir / 'landlord_up.ckpt',
@@ -112,19 +141,38 @@ def build_agents(style_dir: Path) -> Dict[str, AgentSpec]:
         missing_text = '\n'.join(missing)
         raise FileNotFoundError(f'Missing style checkpoints:\n{missing_text}')
 
-    return {
+    agents = {
         'baseline_ADP': AgentSpec('baseline_ADP', 'baseline_ADP', 'baseline_ADP', 'baseline_ADP'),
         'baseline_WP': AgentSpec('baseline_WP', 'baseline_WP', 'baseline_WP', 'baseline_WP'),
         'baseline_SL': AgentSpec('baseline_SL', 'baseline_sl', 'baseline_sl', 'baseline_sl'),
         'rlcard': AgentSpec('rlcard', 'rlcard', 'rlcard', 'rlcard'),
         'random': AgentSpec('random', 'random', 'random', 'random'),
-        'style_model': AgentSpec(
-            'style_model',
+        style_model_name: AgentSpec(
+            style_model_name,
             str(style_paths['landlord']),
             str(style_paths['landlord_up']),
             str(style_paths['landlord_down']),
         ),
     }
+    for spec in (extra_baseline_agents or []):
+        name, dirpath_str = spec.split(':', 1)
+        dirpath = Path(dirpath_str)
+        missing_ckpts = [
+            str(dirpath / f)
+            for f in ('landlord.ckpt', 'landlord_up.ckpt', 'landlord_down.ckpt')
+            if not (dirpath / f).exists()
+        ]
+        if missing_ckpts:
+            raise FileNotFoundError(
+                f'Missing checkpoints for extra agent {name!r}:\n' + '\n'.join(missing_ckpts)
+            )
+        agents[name] = AgentSpec(
+            name,
+            str(dirpath / 'landlord.ckpt'),
+            str(dirpath / 'landlord_up.ckpt'),
+            str(dirpath / 'landlord_down.ckpt'),
+        )
+    return agents
 
 
 def reset_counters() -> None:
@@ -281,18 +329,51 @@ def format_summary(agent_names: List[str], results: List[Dict[str, float]]) -> s
         farmer_summary[row['farmer_agent']]['adp'].append(row['adp_farmer'])
 
     lines = ['# Summary', '', '| agent | avg_landlord_wp | avg_landlord_adp | avg_farmer_wp | avg_farmer_adp |', '| --- | --- | --- | --- | --- |']
+
+    def safe_mean(values: List[float]) -> str:
+        if not values:
+            return '-'
+        return f'{np.mean(values):.4f}'
+
     for agent_name in agent_names:
-        avg_landlord_wp = np.mean(landlord_summary[agent_name]['wp'])
-        avg_landlord_adp = np.mean(landlord_summary[agent_name]['adp'])
-        avg_farmer_wp = np.mean(farmer_summary[agent_name]['wp'])
-        avg_farmer_adp = np.mean(farmer_summary[agent_name]['adp'])
+        avg_landlord_wp = safe_mean(landlord_summary[agent_name]['wp'])
+        avg_landlord_adp = safe_mean(landlord_summary[agent_name]['adp'])
+        avg_farmer_wp = safe_mean(farmer_summary[agent_name]['wp'])
+        avg_farmer_adp = safe_mean(farmer_summary[agent_name]['adp'])
         lines.append(
-            '| {} | {:.4f} | {:.4f} | {:.4f} | {:.4f} |'.format(
+            '| {} | {} | {} | {} | {} |'.format(
                 agent_name,
                 avg_landlord_wp,
                 avg_landlord_adp,
                 avg_farmer_wp,
                 avg_farmer_adp,
+            )
+        )
+    lines.append('')
+    return '\n'.join(lines)
+
+
+def has_complete_round_robin(agent_names: List[str], results: List[Dict[str, float]]) -> bool:
+    lookup = {(row['landlord_agent'], row['farmer_agent']) for row in results}
+    return all((landlord_agent, farmer_agent) in lookup for landlord_agent in agent_names for farmer_agent in agent_names)
+
+
+def format_matchup_table(results: List[Dict[str, float]], title: str = 'Matchups') -> str:
+    lines = [
+        f'# {title}',
+        '',
+        '| landlord_agent | farmer_agent | wp_landlord | wp_farmer | adp_landlord | adp_farmer |',
+        '| --- | --- | --- | --- | --- | --- |',
+    ]
+    for row in results:
+        lines.append(
+            '| {} | {} | {:.4f} | {:.4f} | {:.4f} | {:.4f} |'.format(
+                row['landlord_agent'],
+                row['farmer_agent'],
+                row['wp_landlord'],
+                row['wp_farmer'],
+                row['adp_landlord'],
+                row['adp_farmer'],
             )
         )
     lines.append('')
@@ -306,10 +387,15 @@ def write_markdown(agent_names: List[str], results: List[Dict[str, float]], outp
         '',
         build_markdown_style_block(),
         format_summary(agent_names, results),
-        format_matrix(agent_names, results, ['wp_landlord'], 'Landlord Win Rate Matrix'),
-        format_matrix(agent_names, results, ['adp_landlord'], 'Landlord ADP Matrix'),
-        format_matrix(agent_names, results, ['wp_landlord', 'adp_landlord'], 'Combined Landlord Metrics Matrix'),
     ]
+    if has_complete_round_robin(agent_names, results):
+        sections.extend([
+            format_matrix(agent_names, results, ['wp_landlord'], 'Landlord Win Rate Matrix'),
+            format_matrix(agent_names, results, ['adp_landlord'], 'Landlord ADP Matrix'),
+            format_matrix(agent_names, results, ['wp_landlord', 'adp_landlord'], 'Combined Landlord Metrics Matrix'),
+        ])
+    else:
+        sections.append(format_matchup_table(results, 'Focused Matchup Results'))
     output_path.write_text('\n'.join(sections))
 
 
@@ -399,6 +485,8 @@ def print_run_config(args: argparse.Namespace, agent_names: List[str], eval_data
     print(f'  seed: {seed_text}')
     print(f'  include_mixed: {args.include_mixed}')
     print(f'  agent_order: {", ".join(agent_names)}')
+    if args.focus_agent:
+        print(f'  focus_agent: {args.focus_agent}')
 
 
 def main() -> None:
@@ -407,32 +495,35 @@ def main() -> None:
     style_dir = Path(args.style_dir).resolve()
     output_dir = Path(args.output_dir).resolve()
 
-    agents = build_agents(style_dir)
+    agents = build_agents(style_dir, args.style_model_name, args.extra_baseline_agent)
     agent_names = [name for name in AGENT_ORDER if name in agents]
     agent_names.extend(name for name in agents if name not in agent_names)
     print_run_config(args, agent_names, eval_data_path, style_dir, output_dir)
     ensure_eval_data(eval_data_path, args.num_games, args.seed)
 
     results: List[Dict[str, float]] = []
-    total_matchups = len(agent_names) * len(agent_names)
+    all_pairs = [
+        (l, f) for l in agent_names for f in agent_names
+        if not args.focus_agent or l == args.focus_agent or f == args.focus_agent
+    ]
+    total_matchups = len(all_pairs)
     matchup_index = 0
-    for landlord_name in agent_names:
-        for farmer_name in agent_names:
-            matchup_index += 1
-            print(f'[{matchup_index}/{total_matchups}] {landlord_name} vs {farmer_name}')
-            metrics = run_matchup(agents[landlord_name], agents[farmer_name], eval_data_path, args.num_workers)
-            result = {
-                'landlord_agent': landlord_name,
-                'farmer_agent': farmer_name,
-                **metrics,
-            }
-            results.append(result)
-            print(
-                '  wp_landlord={:.4f} adp_landlord={:.4f}'.format(
-                    metrics['wp_landlord'],
-                    metrics['adp_landlord'],
-                )
+    for landlord_name, farmer_name in all_pairs:
+        matchup_index += 1
+        print(f'[{matchup_index}/{total_matchups}] {landlord_name} vs {farmer_name}')
+        metrics = run_matchup(agents[landlord_name], agents[farmer_name], eval_data_path, args.num_workers)
+        result = {
+            'landlord_agent': landlord_name,
+            'farmer_agent': farmer_name,
+            **metrics,
+        }
+        results.append(result)
+        print(
+            '  wp_landlord={:.4f} adp_landlord={:.4f}'.format(
+                metrics['wp_landlord'],
+                metrics['adp_landlord'],
             )
+        )
 
     mixed_results: List[Dict[str, float]] = []
     if args.include_mixed:
@@ -464,16 +555,17 @@ def main() -> None:
                 )
             )
 
-    csv_path = output_dir / 'model_round_robin.csv'
-    markdown_path = output_dir / 'model_round_robin.md'
+    suffix = args.output_suffix
+    csv_path = output_dir / f'model_round_robin{suffix}.csv'
+    markdown_path = output_dir / f'model_round_robin{suffix}.md'
     write_csv(results, csv_path)
     write_markdown(agent_names, results, markdown_path)
 
     print(f'Wrote CSV to {csv_path}')
     print(f'Wrote Markdown table to {markdown_path}')
     if args.include_mixed:
-        mixed_csv_path = output_dir / 'model_round_robin_mixed.csv'
-        mixed_markdown_path = output_dir / 'model_round_robin_mixed.md'
+        mixed_csv_path = output_dir / f'model_round_robin_mixed{suffix}.csv'
+        mixed_markdown_path = output_dir / f'model_round_robin_mixed{suffix}.md'
         write_mixed_csv(mixed_results, mixed_csv_path)
         write_mixed_markdown(agent_names, mixed_results, mixed_markdown_path)
         print(f'Wrote mixed CSV to {mixed_csv_path}')

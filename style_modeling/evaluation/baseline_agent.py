@@ -9,7 +9,10 @@ from style_modeling.env.env import test_get_obs
 def _load_model(position, model_type):
     from style_modeling.dmc.models import baseline_model_dict
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-    if model_type == 'baseline_sl':
+    candidate = model_type if os.path.isabs(model_type) else os.path.join(repo_root, model_type)
+    if os.path.isfile(candidate):
+        model_path = candidate
+    elif model_type == 'baseline_sl':
         model_path = os.path.join(repo_root, 'baselines', 'sl', position + '.ckpt')
     elif model_type == 'baseline_ADP':
         model_path = os.path.join(repo_root, 'baselines', 'douzero_ADP', position + '.ckpt')
