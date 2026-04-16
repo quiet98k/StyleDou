@@ -198,6 +198,7 @@ cython_debug/
 # Learn more at https://abstra.io/docs
 .abstra/
 
+
 # Visual Studio Code
 #  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
 #  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
@@ -232,16 +233,12 @@ logs/
 *.pkl
 
 *checkpoints/
-
-*.ckpt
-
-!baselines/**
-!baselines/**/*.ckpt
 !douzero_checkpoints/
 !douzero_checkpoints/**
-!douzero_checkpoints/**/*.ckpt
+douzero_checkpoints/**/*.ckpt
 !most_recent_model/
 !most_recent_model/**
-!most_recent_model/**/*.ckpt
 
 .codex
+
+.vscode
