@@ -18,6 +18,7 @@ from style_modeling.evaluation import simulation as style_simulation
 
 AGENT_ORDER = [
     'style_model',
+    'style_model_500M',
     'baseline_ADP',
     'baseline_WP',
     'baseline_SL',

@@ -16,13 +16,14 @@
 
 | agent | avg_landlord_wp | avg_landlord_adp | avg_farmer_wp | avg_farmer_adp |
 | --- | --- | --- | --- | --- |
-| style_model_1B | 0.5494 | 0.5364 | 0.6216 | 0.6920 |
-| baseline_500M | 0.5102 | 0.2269 | 0.5896 | 0.4418 |
-| baseline_ADP | 0.6135 | 0.9183 | 0.7233 | 1.3875 |
-| baseline_WP | 0.6483 | 0.7881 | 0.7606 | 1.2292 |
-| baseline_SL | 0.5104 | 0.2264 | 0.6506 | 0.6899 |
-| rlcard | 0.3115 | -1.1349 | 0.3291 | -1.1997 |
-| random | 0.0643 | -2.3538 | 0.1176 | -2.4481 |
+| style_model_1B | 0.5450 | 0.5037 | 0.6170 | 0.6592 |
+| style_model_500M | 0.5027 | 0.1451 | 0.5836 | 0.4466 |
+| baseline_500M | 0.5042 | 0.1781 | 0.5835 | 0.4071 |
+| baseline_ADP | 0.6108 | 0.8967 | 0.7233 | 1.3823 |
+| baseline_WP | 0.6454 | 0.7673 | 0.7601 | 1.2192 |
+| baseline_SL | 0.5035 | 0.1767 | 0.6472 | 0.6697 |
+| rlcard | 0.2986 | -1.2312 | 0.3119 | -1.2982 |
+| random | 0.0576 | -2.4105 | 0.1056 | -2.5118 |
 
 # Landlord Win Rate Matrix
 
@@ -31,6 +32,7 @@
     <tr>
       <th class="matrix-corner"><span class="corner-farmers">Farmers</span><span class="corner-landlord">Landlord</span></th>
       <th>style_model_1B</th>
+      <th>style_model_500M</th>
       <th>baseline_500M</th>
       <th>baseline_ADP</th>
       <th>baseline_WP</th>
@@ -43,6 +45,7 @@
     <tr>
       <th class="matrix-row-header">style_model_1B</th>
       <td><div class="metric-cell">wp_landlord=0.4641</div></td>
+      <td><div class="metric-cell">wp_landlord=0.5143</div></td>
       <td><div class="metric-cell">wp_landlord=0.5185</div></td>
       <td><div class="metric-cell">wp_landlord=0.3202</div></td>
       <td><div class="metric-cell">wp_landlord=0.2863</div></td>
@@ -51,8 +54,20 @@
       <td><div class="metric-cell">wp_landlord=0.9836</div></td>
     </tr>
     <tr>
+      <th class="matrix-row-header">style_model_500M</th>
+      <td><div class="metric-cell">wp_landlord=0.4155</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4628</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4589</div></td>
+      <td><div class="metric-cell">wp_landlord=0.2771</div></td>
+      <td><div class="metric-cell">wp_landlord=0.2436</div></td>
+      <td><div class="metric-cell">wp_landlord=0.3771</div></td>
+      <td><div class="metric-cell">wp_landlord=0.8085</div></td>
+      <td><div class="metric-cell">wp_landlord=0.9781</div></td>
+    </tr>
+    <tr>
       <th class="matrix-row-header">baseline_500M</th>
       <td><div class="metric-cell">wp_landlord=0.4203</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4625</div></td>
       <td><div class="metric-cell">wp_landlord=0.4560</div></td>
       <td><div class="metric-cell">wp_landlord=0.2823</div></td>
       <td><div class="metric-cell">wp_landlord=0.2453</div></td>
@@ -63,6 +78,7 @@
     <tr>
       <th class="matrix-row-header">baseline_ADP</th>
       <td><div class="metric-cell">wp_landlord=0.5523</div></td>
+      <td><div class="metric-cell">wp_landlord=0.5913</div></td>
       <td><div class="metric-cell">wp_landlord=0.5936</div></td>
       <td><div class="metric-cell">wp_landlord=0.4233</div></td>
       <td><div class="metric-cell">wp_landlord=0.3702</div></td>
@@ -73,6 +89,7 @@
     <tr>
       <th class="matrix-row-header">baseline_WP</th>
       <td><div class="metric-cell">wp_landlord=0.5926</div></td>
+      <td><div class="metric-cell">wp_landlord=0.6253</div></td>
       <td><div class="metric-cell">wp_landlord=0.6293</div></td>
       <td><div class="metric-cell">wp_landlord=0.4722</div></td>
       <td><div class="metric-cell">wp_landlord=0.4099</div></td>
@@ -83,6 +100,7 @@
     <tr>
       <th class="matrix-row-header">baseline_SL</th>
       <td><div class="metric-cell">wp_landlord=0.4133</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4555</div></td>
       <td><div class="metric-cell">wp_landlord=0.4577</div></td>
       <td><div class="metric-cell">wp_landlord=0.3013</div></td>
       <td><div class="metric-cell">wp_landlord=0.2501</div></td>
@@ -93,6 +111,7 @@
     <tr>
       <th class="matrix-row-header">rlcard</th>
       <td><div class="metric-cell">wp_landlord=0.1957</div></td>
+      <td><div class="metric-cell">wp_landlord=0.2087</div></td>
       <td><div class="metric-cell">wp_landlord=0.2105</div></td>
       <td><div class="metric-cell">wp_landlord=0.1280</div></td>
       <td><div class="metric-cell">wp_landlord=0.1069</div></td>
@@ -102,6 +121,7 @@
     </tr>
     <tr>
       <th class="matrix-row-header">random</th>
+      <td><div class="metric-cell">wp_landlord=0.0105</div></td>
       <td><div class="metric-cell">wp_landlord=0.0105</div></td>
       <td><div class="metric-cell">wp_landlord=0.0075</div></td>
       <td><div class="metric-cell">wp_landlord=0.0095</div></td>
@@ -120,6 +140,7 @@
     <tr>
       <th class="matrix-corner"><span class="corner-farmers">Farmers</span><span class="corner-landlord">Landlord</span></th>
       <th>style_model_1B</th>
+      <th>style_model_500M</th>
       <th>baseline_500M</th>
       <th>baseline_ADP</th>
       <th>baseline_WP</th>
@@ -132,6 +153,7 @@
     <tr>
       <th class="matrix-row-header">style_model_1B</th>
       <td><div class="metric-cell">adp_landlord=-0.0624</div></td>
+      <td><div class="metric-cell">adp_landlord=0.2748</div></td>
       <td><div class="metric-cell">adp_landlord=0.3518</div></td>
       <td><div class="metric-cell">adp_landlord=-1.0592</div></td>
       <td><div class="metric-cell">adp_landlord=-0.8442</div></td>
@@ -140,8 +162,20 @@
       <td><div class="metric-cell">adp_landlord=3.2100</div></td>
     </tr>
     <tr>
+      <th class="matrix-row-header">style_model_500M</th>
+      <td><div class="metric-cell">adp_landlord=-0.4300</div></td>
+      <td><div class="metric-cell">adp_landlord=-0.1676</div></td>
+      <td><div class="metric-cell">adp_landlord=-0.1640</div></td>
+      <td><div class="metric-cell">adp_landlord=-1.3458</div></td>
+      <td><div class="metric-cell">adp_landlord=-1.1492</div></td>
+      <td><div class="metric-cell">adp_landlord=-0.5282</div></td>
+      <td><div class="metric-cell">adp_landlord=1.9882</div></td>
+      <td><div class="metric-cell">adp_landlord=2.9576</div></td>
+    </tr>
+    <tr>
       <th class="matrix-row-header">baseline_500M</th>
       <td><div class="metric-cell">adp_landlord=-0.4042</div></td>
+      <td><div class="metric-cell">adp_landlord=-0.1634</div></td>
       <td><div class="metric-cell">adp_landlord=-0.1468</div></td>
       <td><div class="metric-cell">adp_landlord=-1.3174</div></td>
       <td><div class="metric-cell">adp_landlord=-1.1470</div></td>
@@ -152,6 +186,7 @@
     <tr>
       <th class="matrix-row-header">baseline_ADP</th>
       <td><div class="metric-cell">adp_landlord=0.4490</div></td>
+      <td><div class="metric-cell">adp_landlord=0.7454</div></td>
       <td><div class="metric-cell">adp_landlord=0.7852</div></td>
       <td><div class="metric-cell">adp_landlord=-0.4354</div></td>
       <td><div class="metric-cell">adp_landlord=-0.3368</div></td>
@@ -162,6 +197,7 @@
     <tr>
       <th class="matrix-row-header">baseline_WP</th>
       <td><div class="metric-cell">adp_landlord=0.3670</div></td>
+      <td><div class="metric-cell">adp_landlord=0.6222</div></td>
       <td><div class="metric-cell">adp_landlord=0.6712</div></td>
       <td><div class="metric-cell">adp_landlord=-0.5006</div></td>
       <td><div class="metric-cell">adp_landlord=-0.4538</div></td>
@@ -172,6 +208,7 @@
     <tr>
       <th class="matrix-row-header">baseline_SL</th>
       <td><div class="metric-cell">adp_landlord=-0.4582</div></td>
+      <td><div class="metric-cell">adp_landlord=-0.1714</div></td>
       <td><div class="metric-cell">adp_landlord=-0.1462</div></td>
       <td><div class="metric-cell">adp_landlord=-1.1790</div></td>
       <td><div class="metric-cell">adp_landlord=-1.0932</div></td>
@@ -182,6 +219,7 @@
     <tr>
       <th class="matrix-row-header">rlcard</th>
       <td><div class="metric-cell">adp_landlord=-1.9422</div></td>
+      <td><div class="metric-cell">adp_landlord=-1.9054</div></td>
       <td><div class="metric-cell">adp_landlord=-1.8254</div></td>
       <td><div class="metric-cell">adp_landlord=-2.4250</div></td>
       <td><div class="metric-cell">adp_landlord=-2.2142</div></td>
@@ -192,6 +230,7 @@
     <tr>
       <th class="matrix-row-header">random</th>
       <td><div class="metric-cell">adp_landlord=-2.7928</div></td>
+      <td><div class="metric-cell">adp_landlord=-2.8076</div></td>
       <td><div class="metric-cell">adp_landlord=-2.7824</div></td>
       <td><div class="metric-cell">adp_landlord=-2.7958</div></td>
       <td><div class="metric-cell">adp_landlord=-2.5152</div></td>
@@ -209,6 +248,7 @@
     <tr>
       <th class="matrix-corner"><span class="corner-farmers">Farmers</span><span class="corner-landlord">Landlord</span></th>
       <th>style_model_1B</th>
+      <th>style_model_500M</th>
       <th>baseline_500M</th>
       <th>baseline_ADP</th>
       <th>baseline_WP</th>
@@ -221,6 +261,7 @@
     <tr>
       <th class="matrix-row-header">style_model_1B</th>
       <td><div class="metric-cell">wp_landlord=0.4641<br>adp_landlord=-0.0624</div></td>
+      <td><div class="metric-cell">wp_landlord=0.5143<br>adp_landlord=0.2748</div></td>
       <td><div class="metric-cell">wp_landlord=0.5185<br>adp_landlord=0.3518</div></td>
       <td><div class="metric-cell">wp_landlord=0.3202<br>adp_landlord=-1.0592</div></td>
       <td><div class="metric-cell">wp_landlord=0.2863<br>adp_landlord=-0.8442</div></td>
@@ -229,8 +270,20 @@
       <td><div class="metric-cell">wp_landlord=0.9836<br>adp_landlord=3.2100</div></td>
     </tr>
     <tr>
+      <th class="matrix-row-header">style_model_500M</th>
+      <td><div class="metric-cell">wp_landlord=0.4155<br>adp_landlord=-0.4300</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4628<br>adp_landlord=-0.1676</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4589<br>adp_landlord=-0.1640</div></td>
+      <td><div class="metric-cell">wp_landlord=0.2771<br>adp_landlord=-1.3458</div></td>
+      <td><div class="metric-cell">wp_landlord=0.2436<br>adp_landlord=-1.1492</div></td>
+      <td><div class="metric-cell">wp_landlord=0.3771<br>adp_landlord=-0.5282</div></td>
+      <td><div class="metric-cell">wp_landlord=0.8085<br>adp_landlord=1.9882</div></td>
+      <td><div class="metric-cell">wp_landlord=0.9781<br>adp_landlord=2.9576</div></td>
+    </tr>
+    <tr>
       <th class="matrix-row-header">baseline_500M</th>
       <td><div class="metric-cell">wp_landlord=0.4203<br>adp_landlord=-0.4042</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4625<br>adp_landlord=-0.1634</div></td>
       <td><div class="metric-cell">wp_landlord=0.4560<br>adp_landlord=-0.1468</div></td>
       <td><div class="metric-cell">wp_landlord=0.2823<br>adp_landlord=-1.3174</div></td>
       <td><div class="metric-cell">wp_landlord=0.2453<br>adp_landlord=-1.1470</div></td>
@@ -241,6 +294,7 @@
     <tr>
       <th class="matrix-row-header">baseline_ADP</th>
       <td><div class="metric-cell">wp_landlord=0.5523<br>adp_landlord=0.4490</div></td>
+      <td><div class="metric-cell">wp_landlord=0.5913<br>adp_landlord=0.7454</div></td>
       <td><div class="metric-cell">wp_landlord=0.5936<br>adp_landlord=0.7852</div></td>
       <td><div class="metric-cell">wp_landlord=0.4233<br>adp_landlord=-0.4354</div></td>
       <td><div class="metric-cell">wp_landlord=0.3702<br>adp_landlord=-0.3368</div></td>
@@ -251,6 +305,7 @@
     <tr>
       <th class="matrix-row-header">baseline_WP</th>
       <td><div class="metric-cell">wp_landlord=0.5926<br>adp_landlord=0.3670</div></td>
+      <td><div class="metric-cell">wp_landlord=0.6253<br>adp_landlord=0.6222</div></td>
       <td><div class="metric-cell">wp_landlord=0.6293<br>adp_landlord=0.6712</div></td>
       <td><div class="metric-cell">wp_landlord=0.4722<br>adp_landlord=-0.5006</div></td>
       <td><div class="metric-cell">wp_landlord=0.4099<br>adp_landlord=-0.4538</div></td>
@@ -261,6 +316,7 @@
     <tr>
       <th class="matrix-row-header">baseline_SL</th>
       <td><div class="metric-cell">wp_landlord=0.4133<br>adp_landlord=-0.4582</div></td>
+      <td><div class="metric-cell">wp_landlord=0.4555<br>adp_landlord=-0.1714</div></td>
       <td><div class="metric-cell">wp_landlord=0.4577<br>adp_landlord=-0.1462</div></td>
       <td><div class="metric-cell">wp_landlord=0.3013<br>adp_landlord=-1.1790</div></td>
       <td><div class="metric-cell">wp_landlord=0.2501<br>adp_landlord=-1.0932</div></td>
@@ -271,6 +327,7 @@
     <tr>
       <th class="matrix-row-header">rlcard</th>
       <td><div class="metric-cell">wp_landlord=0.1957<br>adp_landlord=-1.9422</div></td>
+      <td><div class="metric-cell">wp_landlord=0.2087<br>adp_landlord=-1.9054</div></td>
       <td><div class="metric-cell">wp_landlord=0.2105<br>adp_landlord=-1.8254</div></td>
       <td><div class="metric-cell">wp_landlord=0.1280<br>adp_landlord=-2.4250</div></td>
       <td><div class="metric-cell">wp_landlord=0.1069<br>adp_landlord=-2.2142</div></td>
@@ -281,6 +338,7 @@
     <tr>
       <th class="matrix-row-header">random</th>
       <td><div class="metric-cell">wp_landlord=0.0105<br>adp_landlord=-2.7928</div></td>
+      <td><div class="metric-cell">wp_landlord=0.0105<br>adp_landlord=-2.8076</div></td>
       <td><div class="metric-cell">wp_landlord=0.0075<br>adp_landlord=-2.7824</div></td>
       <td><div class="metric-cell">wp_landlord=0.0095<br>adp_landlord=-2.7958</div></td>
       <td><div class="metric-cell">wp_landlord=0.0069<br>adp_landlord=-2.5152</div></td>
