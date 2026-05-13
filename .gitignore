@@ -219,25 +219,25 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Project training/evaluation artifacts
+baselines/
+douzero_checkpoints/
+most_recent_model/
+logs/
+eval_data*.pkl
+*.ckpt
+*.pt
+*.pth
+model.tar
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-baselines/*
-!baselines/
-
-logs/
 *.log*
-
 *.pkl
-
 *checkpoints/
-!douzero_checkpoints/
-!douzero_checkpoints/**
-douzero_checkpoints/**/*.ckpt
-!most_recent_model/
-!most_recent_model/**
 
 .codex
 
