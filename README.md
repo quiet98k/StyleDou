@@ -14,14 +14,14 @@ improve DouZero-style agents in three-player imperfect-information DouDizhu.
 ## What Is Included
 
 - Baseline DouZero training and evaluation under `douzero/`.
-- DouZero+ inspired opponent modeling under `oppo_modeling/`.
+- DouZero+-inspired opponent modeling under `oppo_modeling/`.
 - Style modeling under `style_modeling/`, including:
   - opponent-style encoders over public action history,
   - style-conditioned decision networks,
   - auxiliary opponent-action prediction loss,
   - checkpoint-time evaluation hooks.
 - Round-robin evaluation tooling for baseline, style, RLCard, and random agents.
-- Trained checkpoints, logs, plots, and written reports from the project runs.
+- Evaluation summaries and plots from the project runs.
 
 ## Repository Layout
 
@@ -31,11 +31,9 @@ improve DouZero-style agents in three-player imperfect-information DouDizhu.
 |-- oppo_modeling/            # DouZero+-style opponent modeling branch
 |-- style_modeling/           # Style-conditioned model implementation
 |-- scripts/                  # Slurm training/evaluation job scripts
-|-- douzero_checkpoints/      # Training checkpoints and logs
-|-- most_recent_model/        # Exported checkpoint sets for evaluation
 |-- model_eval_results/       # Round-robin CSV/Markdown evaluation outputs
 |-- plots/                    # Loss and evaluation plots
-|-- documents/                # Run guides, implementation notes, reports
+|-- documents/                # Upstream/reference documentation
 |-- train.py                  # Baseline DouZero training entry point
 |-- train_oppo.py             # Opponent-model training entry point
 |-- train_style.py            # Style-model training entry point
@@ -164,7 +162,7 @@ Training writes checkpoints and logs to:
 douzero_checkpoints/<branch>/<xpid>/
 ```
 
-The current exported checkpoints are organized under:
+Exported checkpoints are expected under:
 
 ```text
 most_recent_model/
@@ -172,6 +170,10 @@ most_recent_model/
 |-- style_model_500M/
 `-- style_model_1B/
 ```
+
+Checkpoint directories such as `douzero_checkpoints/`, `most_recent_model/`,
+and `baselines/` are ignored by git. Keep trained weights locally or distribute
+them through an external artifact store.
 
 Evaluation outputs include:
 
@@ -185,17 +187,12 @@ The latest included round-robin summary compares `style_model_1B`,
 random agent. See `model_eval_results/model_round_robin.md` for the complete
 matrix.
 
-## Reports and Notes
+## Reference Docs
 
-Useful project notes are in `documents/`:
+The `documents/` directory preserves upstream/reference notes:
 
-- `documents/STYLE_MODELING_PLAN.md` explains the style-model design.
-- `documents/STYLE_MODELING_RUN.md` documents style-model run parameters.
-- `documents/TRAINING_EVAL_REPORT.md` explains the baseline and opponent-model
-  training/evaluation flow.
-- `documents/DMC_EVAL_COMPARISON.md` summarizes evaluation comparisons.
-- `documents/Douzero_README.md` and `documents/Douzero_PLUS_README.md` preserve
-  upstream/reference documentation.
+- `documents/Douzero_README.md` contains the original DouZero README.
+- `documents/Douzero_PLUS_README.md` contains the DouZero+ reference README.
 
 ## Attribution
 
@@ -208,5 +205,5 @@ This repository is derived from and extends:
 
 Please cite and respect the licenses of the upstream DouZero and DouZero+
 projects when using this repository. This project-specific work adds the
-style-modeling branch, evaluation scripts, experiment outputs, and reports on
-top of those foundations.
+style-modeling branch, evaluation scripts, and experiment outputs on top of
+those foundations.
